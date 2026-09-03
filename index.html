@@ -47,7 +47,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <h3>School Cash & Fund Dashboard</h3>
       <div class="finance-cards"><div class="finance-card">Today's Receipt<b id="finTodayReceipt">₹0.00</b></div><div class="finance-card">Today's Payment<b id="finTodayPayment">₹0.00</b></div><div class="finance-card">Net Today<b id="finTodayNet">₹0.00</b></div><div class="finance-card">Total Entries<b id="finEntryCount">0</b></div></div>
       <div class="finance-actions"><button onclick="financeTab('entry')">➕ New Daily Entry</button><button onclick="exportFinanceCSV()">Export CSV</button></div>
-      <div class="finance-status" id="finDashStatus">Loading…</div>
+      <div class="finance-status" id="finDashStatus">Connecting to Firebase live sync…</div>
       <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Fund</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Entries</th></tr></thead><tbody id="finFundSummary"></tbody></table></div>
     </section>
     <section id="finPanelEntry" style="display:none">
@@ -73,7 +73,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
     <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Type</th><th>Fund</th><th>Voucher</th><th>Particulars</th><th>Amount</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
-    <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available on other computers using the same login.</div></section>
+    <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available live on other computers using the same login.</div></section>
   </div>
 </div>
 
@@ -103,6 +103,8 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
 
 let financeRows = [], financeOpeningBalances = {}, financeLoaded = false;
+let financeTransactionsUnsubscribe = null;
+let financeOpeningBalancesUnsubscribe = null;
 
 function finEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function finNum(v){if(typeof v==='number')return isFinite(v)?v:0;let n=parseFloat(String(v??'').replace(/[₹,]/g,'').trim());return isFinite(n)?n:0;}
@@ -176,7 +178,20 @@ async function doLogin(){
   }
 }
 
-function doLogout(){ auth.signOut(); }
+function doLogout(){
+  if(financeTransactionsUnsubscribe) {
+    financeTransactionsUnsubscribe();
+    financeTransactionsUnsubscribe = null;
+  }
+  if(financeOpeningBalancesUnsubscribe) {
+    financeOpeningBalancesUnsubscribe();
+    financeOpeningBalancesUnsubscribe = null;
+  }
+  financeRows = [];
+  financeOpeningBalances = {};
+  financeLoaded = false;
+  auth.signOut();
+}
 
 ['loginEmail','loginPassword'].forEach(id => {
   const el = document.getElementById(id);
@@ -187,18 +202,47 @@ function doLogout(){ auth.signOut(); }
 
 async function loadFinanceFromFirebase(){
   if(!auth.currentUser) return;
-  try {
-    let s = await db.collection('financeTransactions').get();
-    financeRows = s.docs.map(d => ({ id: d.id, ...d.data() }));
-    let o = await db.collection('financeOpeningBalances').get();
-    financeOpeningBalances = Object.fromEntries(o.docs.map(d => [d.id, d.data()]));
-    financeLoaded = true;
-  } catch(e) {
-    financeRows = [];
-    financeOpeningBalances = {};
-    let status = document.getElementById('finDashStatus');
-    if(status) status.textContent = 'Firebase load failed: ' + e.message;
+
+  // Stop previous listeners before creating new ones.
+  if(financeTransactionsUnsubscribe) {
+    financeTransactionsUnsubscribe();
+    financeTransactionsUnsubscribe = null;
   }
+  if(financeOpeningBalancesUnsubscribe) {
+    financeOpeningBalancesUnsubscribe();
+    financeOpeningBalancesUnsubscribe = null;
+  }
+
+  const status = document.getElementById('finDashStatus');
+
+  financeTransactionsUnsubscribe = db.collection('financeTransactions')
+    .onSnapshot(
+      snapshot => {
+        financeRows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        financeLoaded = true;
+        renderAll();
+        if(status) status.textContent =
+          `${financeRows.length} entries | ${FINANCE_FUNDS.length} fund/accounts | LIVE cloud sync`;
+      },
+      error => {
+        console.error('Firebase transaction listener failed:', error);
+        if(status) status.textContent = 'Firebase live sync failed: ' + error.message;
+      }
+    );
+
+  financeOpeningBalancesUnsubscribe = db.collection('financeOpeningBalances')
+    .onSnapshot(
+      snapshot => {
+        financeOpeningBalances = Object.fromEntries(
+          snapshot.docs.map(d => [d.id, d.data()])
+        );
+        renderAll();
+      },
+      error => {
+        console.error('Firebase opening balance listener failed:', error);
+        if(status) status.textContent = 'Opening balance sync failed: ' + error.message;
+      }
+    );
 }
 
 function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFinanceVouchers(); }
@@ -330,14 +374,12 @@ async function saveFinanceEntry(){
   try {
     if(id){
       await db.collection('financeTransactions').doc(id).set(row, {merge:true});
-      let i = financeRows.findIndex(x => x.id === id);
-      financeRows[i] = {id, ...financeRows[i], ...row};
-      document.getElementById('finEntryStatus').textContent = 'Updated successfully.';
+      document.getElementById('finEntryStatus').textContent = 'Updated successfully. Synced to Firebase.';
     } else {
       row.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       let ref = await db.collection('financeTransactions').add(row);
-      financeRows.push({id: ref.id, ...row, createdAt: new Date()});
-      document.getElementById('finEntryStatus').textContent = 'Added successfully.';
+      // The onSnapshot listener will add the saved row from Firebase.
+      document.getElementById('finEntryStatus').textContent = 'Added successfully. Synced to Firebase.';
     }
     clearFinanceEntry();
     renderAll();
@@ -351,7 +393,7 @@ async function deleteFinanceEntry(id){
   if(!x || !confirm(`Delete this ${x.type} entry?\n${x.date} | ${x.particulars} | ${finMoney(x.amount)}`)) return;
   try {
     await db.collection('financeTransactions').doc(id).delete();
-    financeRows = financeRows.filter(r => r.id !== id);
+    // The live Firebase listener will remove the deleted row.
     renderAll();
   } catch(e) {
     alert('Delete failed: ' + e.message);
@@ -422,8 +464,7 @@ async function importLegacyCashWorkbook(file){
       await batch.commit();
     }
 
-    // Refresh from Firebase rather than relying on localStorage.
-    await loadFinanceFromFirebase();
+    // The live Firebase listener will receive the imported rows automatically.
     initFinanceSelectors();
     renderAll();
 
