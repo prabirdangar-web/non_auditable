@@ -119,31 +119,71 @@ function initFinanceSelectors(){
 }
 
 auth.onAuthStateChanged(async u => {
+  const overlay = document.getElementById('loginOverlay');
+  const app = document.getElementById('appRoot');
+  const error = document.getElementById('loginError');
+
   if(u){
-    await loadFinanceFromFirebase();
-    restoreLocalExcelImport();
-    initFinanceSelectors();
-    renderAll();
+    // Firebase authentication succeeded: reveal the application.
+    if(overlay) overlay.style.display = 'none';
+    if(app) app.style.display = 'block';
+    if(error) error.textContent = '';
+
+    try {
+      await loadFinanceFromFirebase();
+      restoreLocalExcelImport();
+      initFinanceSelectors();
+      renderAll();
+    } catch(e) {
+      console.error('Application initialization failed:', e);
+      const status = document.getElementById('finDashStatus');
+      if(status) status.textContent = 'Application initialization failed: ' + e.message;
+    }
   } else {
     showLogin();
   }
 });
 
 function showLogin(){
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('appRoot').style.display = 'none';
+  const overlay = document.getElementById('loginOverlay');
+  const app = document.getElementById('appRoot');
+  const error = document.getElementById('loginError');
+
+  if(overlay) overlay.style.display = 'flex';
+  if(app) app.style.display = 'none';
+  if(error) error.textContent = '';
 }
 
-function doLogin(){
-  let e = document.getElementById('loginEmail').value.trim();
-  let p = document.getElementById('loginPassword').value;
-  document.getElementById('loginError').textContent = '';
-  auth.signInWithEmailAndPassword(e, p).catch(x => {
-    document.getElementById('loginError').textContent = x.message;
-  });
+async function doLogin(){
+  const e = document.getElementById('loginEmail').value.trim();
+  const p = document.getElementById('loginPassword').value;
+  const error = document.getElementById('loginError');
+
+  if(error) error.textContent = '';
+
+  if(!e || !p){
+    if(error) error.textContent = 'Please enter both Email and Password.';
+    return;
+  }
+
+  try {
+    // Do not manually change the UI here. Firebase's auth state listener
+    // will reveal the application only after authentication succeeds.
+    await auth.signInWithEmailAndPassword(e, p);
+  } catch(x) {
+    console.error('Login error:', x);
+    if(error) error.textContent = x.message || 'Login failed.';
+  }
 }
 
 function doLogout(){ auth.signOut(); }
+
+['loginEmail','loginPassword'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('keydown', e => {
+    if(e.key === 'Enter') doLogin();
+  });
+});
 
 async function loadFinanceFromFirebase(){
   if(!auth.currentUser) return;
