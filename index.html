@@ -73,7 +73,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
     <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Type</th><th>Fund</th><th>Voucher</th><th>Particulars</th><th>Amount</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
-    <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel workbook data can be loaded directly into the browser locally.</div></section>
+    <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available on other computers using the same login.</div></section>
   </div>
 </div>
 
@@ -382,6 +382,8 @@ function findHeader(rows){
 async function importLegacyCashWorkbook(file){
   if(!file) return;
   try {
+    if(!auth.currentUser) return alert('Please sign in before importing Excel.');
+
     let wb = XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}), all=[];
     for(let name of wb.SheetNames){
       let fund = LEGACY_SHEET_MAP[name];
@@ -396,30 +398,50 @@ async function importLegacyCashWorkbook(file){
         if(d) last = d; else d = last;
         if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
         let part = String(r[pi]??'').trim(), rec = finNum(r[ri]), pay = finNum(r[payi]), rem = mi>=0 ? String(r[mi]??'').trim() : '';
-        if(rec>0) all.push({id:'excel_'+name.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+i+'_r',date:d,fund,type:'receipt',voucher:'',particulars:part||'Imported receipt',quantity:0,rate:0,amount:rec,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
-        if(pay>0) all.push({id:'excel_'+name.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+i+'_p',date:d,fund,type:'payment',voucher:'',particulars:part||'Imported payment',quantity:0,rate:0,amount:pay,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
+        let base = 'excel_' + name.replace(/[^A-Za-z0-9_-]/g,'_') + '_' + i;
+        if(rec>0) all.push({id:base+'_r',date:d,fund,type:'receipt',voucher:'',particulars:part||'Imported receipt',quantity:0,rate:0,amount:rec,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
+        if(pay>0) all.push({id:base+'_p',date:d,fund,type:'payment',voucher:'',particulars:part||'Imported payment',quantity:0,rate:0,amount:pay,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
       }
     }
+
     if(!all.length) return alert('No ledger rows detected in the selected workbook.');
-    if(!confirm(`Load ${all.length} transaction rows from the Excel workbook locally?`)) return;
-    let existing = financeRows.filter(x => x.source !== 'excel-import');
-    financeRows = existing.concat(all);
-    try { localStorage.setItem('TFHS_EXCEL_IMPORT', JSON.stringify(all)); } catch(e){}
+
+    if(!confirm(`Sync ${all.length} transaction rows from Excel to Firebase?\n\nThese rows will be stored in the cloud and will appear on other computers using the same login.`)) return;
+
+    // Write imported rows to Firestore in batches so every computer sees the same data.
+    const BATCH_SIZE = 400;
+    for(let start=0; start<all.length; start += BATCH_SIZE){
+      const batch = db.batch();
+      const chunk = all.slice(start, start + BATCH_SIZE);
+      chunk.forEach(x => {
+        const data = {...x, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+        delete data.id;
+        const ref = db.collection('financeTransactions').doc(x.id);
+        batch.set(ref, data, {merge:true});
+      });
+      await batch.commit();
+    }
+
+    // Refresh from Firebase rather than relying on localStorage.
+    await loadFinanceFromFirebase();
+    initFinanceSelectors();
     renderAll();
-    alert(`Excel loaded successfully: ${all.length} rows are now available.`);
+
+    // Remove the old local-only cache so another browser cannot appear to
+    // have a different version of the imported ledger.
+    try { localStorage.removeItem('TFHS_EXCEL_IMPORT'); } catch(e){}
+
+    alert(`Excel synced successfully: ${all.length} rows are now stored in Firebase and available on other computers.`);
   } catch(e) {
-    alert('Excel import failed: ' + e.message);
+    console.error('Excel import/sync failed:', e);
+    alert('Excel import/sync failed: ' + (e.message || e));
   }
 }
 
 function restoreLocalExcelImport(){
-  try {
-    let a = JSON.parse(localStorage.getItem('TFHS_EXCEL_IMPORT') || '[]');
-    if(Array.isArray(a) && a.length){
-      financeRows = financeRows.filter(x => x.source !== 'excel-import').concat(a);
-      renderAll();
-    }
-  } catch(e){}
+  // Excel imports are now stored in Firebase, not only in this browser.
+  // Intentionally do not merge localStorage ledger rows into the live data.
+  try { localStorage.removeItem('TFHS_EXCEL_IMPORT'); } catch(e){}
 }
 </script>
 </body>
