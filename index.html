@@ -18,6 +18,10 @@
 @media(max-width:500px){.finance-grid{grid-template-columns:1fr}.finance-span-2,.finance-span-4{grid-column:span 1}.finance-cards{grid-template-columns:1fr}.finance-tabs{overflow:auto;flex-wrap:nowrap}}
 
 body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.login-overlay{position:fixed;inset:0;background:#0b2240;display:flex;align-items:center;justify-content:center;z-index:9999}.login-box{background:#fff;padding:28px;border-radius:8px;width:320px;max-width:90vw}.login-box input{width:100%;padding:9px;margin:7px 0;box-sizing:border-box}.login-box button{width:100%;padding:10px;background:#0b2240;color:#fff;border:0;border-radius:4px}.login-error{color:#b00020;font-size:12px;margin-top:7px}
+
+.deleteSecurityTop{margin:10px 0;padding:12px;border:2px solid #b42318;border-radius:7px;background:#fff3cd;color:#7a1f1f;font-weight:700}
+.deleteSecurityTop input{padding:9px;border:2px solid #b42318;border-radius:5px;width:280px;max-width:100%;box-sizing:border-box}
+.deleteSecurityTop button{padding:9px 12px;margin-left:6px;border:0;border-radius:5px;background:#b42318;color:#fff;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -36,6 +40,14 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
   <div class="action-bar" style="background:#0b2240;color:#fff;padding:7px 12px"><b>Taldangra Fulmati High School (H.S.) — Daily Cash Book</b></div>
   <div class="finance-module" id="financeModule" style="display:block">
     <div class="finance-header"><h2>💰 NON AUDITABLE SCHOOL CASH BOOK / FUND MANAGEMENT</h2><button type="button" class="finance-close" onclick="doLogout()">Sign Out</button></div>
+    <div class="deleteSecurityTop noprint">
+      🔐 EDIT / DELETE PASSWORD — REQUIRED FOR ALL EDITS AND DELETIONS
+      <div style="font-size:12px;margin:5px 0 8px;font-weight:400">The shared password is required before editing or deleting any Cash Book entry, including old/historical and newly added records.</div>
+      <input type="password" id="topDeletePasswordInput" autocomplete="new-password" placeholder="Enter Edit / Delete Password">
+      <button type="button" onclick="saveTopDeletePassword()">Set / Change Password</button>
+      <button type="button" onclick="clearTopDeletePassword()" style="background:#173b5e">Clear</button>
+      <span id="topDeletePasswordStatus" style="font-size:12px;margin-left:8px">Loading…</span>
+    </div>
     <div class="finance-tabs">
       <button type="button" class="active" data-ftab="dashboard" onclick="financeTab('dashboard')">📊 Dashboard</button>
       <button type="button" data-ftab="entry" onclick="financeTab('entry')">➕ Add / Edit Entry</button>
@@ -133,6 +145,7 @@ auth.onAuthStateChanged(async u => {
 
     try {
       await loadFinanceFromFirebase();
+      await loadDeletePassword();
       restoreLocalExcelImport();
       initFinanceSelectors();
       renderAll();
@@ -339,7 +352,41 @@ function clearFinanceEntry(){
   if(d) d.value = new Date().toISOString().slice(0,10);
 }
 
+
+let deletePasswordCache = '';
+async function loadDeletePassword(){
+  try{
+    const snap=await db.collection('_meta').doc('deleteSecurity').get();
+    deletePasswordCache=snap.exists ? String(snap.data().deletePassword||'') : '';
+    const st=document.getElementById('topDeletePasswordStatus');
+    if(st) st.textContent=deletePasswordCache?'Password is set.':'No password set — set one now.';
+  }catch(e){console.error(e);}
+}
+async function saveTopDeletePassword(){
+  const v=document.getElementById('topDeletePasswordInput')?.value||'';
+  if(!v) return alert('Please enter a password.');
+  try{
+    await db.collection('_meta').doc('deleteSecurity').set({deletePassword:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    deletePasswordCache=v;
+    document.getElementById('topDeletePasswordInput').value='';
+    document.getElementById('topDeletePasswordStatus').textContent='Password saved.';
+  }catch(e){alert('Password save failed: '+e.message);}
+}
+function clearTopDeletePassword(){
+  const el=document.getElementById('topDeletePasswordInput'); if(el) el.value='';
+}
+function verifyEditDeletePassword(action){
+  if(!deletePasswordCache) { alert('No Edit / Delete Password is set. Set it in the red security box first.'); return false; }
+  const el=document.getElementById('topDeletePasswordInput');
+  const v=el?.value||'';
+  if(!v){ alert('Enter the Edit / Delete Password in the red security box first.'); el?.focus(); return false; }
+  if(v!==deletePasswordCache){ if(el) el.value=''; alert('Incorrect Edit / Delete Password.'); return false; }
+  if(el) el.value='';
+  return true;
+}
+
 function editFinanceEntry(id){
+  if(!verifyEditDeletePassword('edit')) return;
   let x = financeRows.find(r => r.id === id);
   if(!x) return;
   financeTab('entry');
@@ -389,6 +436,7 @@ async function saveFinanceEntry(){
 }
 
 async function deleteFinanceEntry(id){
+  if(!verifyEditDeletePassword('delete')) return;
   let x = financeRows.find(r => r.id === id);
   if(!x || !confirm(`Delete this ${x.type} entry?\n${x.date} | ${x.particulars} | ${finMoney(x.amount)}`)) return;
   try {
