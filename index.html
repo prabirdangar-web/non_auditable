@@ -19,6 +19,8 @@
 
 body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.login-overlay{position:fixed;inset:0;background:#0b2240;display:flex;align-items:center;justify-content:center;z-index:9999}.login-box{background:#fff;padding:28px;border-radius:8px;width:320px;max-width:90vw}.login-box input{width:100%;padding:9px;margin:7px 0;box-sizing:border-box}.login-box button{width:100%;padding:10px;background:#0b2240;color:#fff;border:0;border-radius:4px}.login-error{color:#b00020;font-size:12px;margin-top:7px}
 
+.orderBar{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;background:#f8fafc;border:1px solid #d4dde7;border-radius:6px;font-size:13px}
+.orderBar b{color:#173b5e}.orderBar button{padding:6px 13px;border:1px solid #173b5e;background:#fff;color:#173b5e;border-radius:14px;font-size:12px;cursor:pointer}.orderBar button.active{background:#173b5e;color:#fff;font-weight:700}
 .deleteSecurityTop{margin:10px 0;padding:12px;border:2px solid #b42318;border-radius:7px;background:#fff3cd;color:#7a1f1f;font-weight:700}
 .deleteSecurityTop input{padding:9px;border:2px solid #b42318;border-radius:5px;width:280px;max-width:100%;box-sizing:border-box}
 .deleteSecurityTop button{padding:9px 12px;margin-left:6px;border:0;border-radius:5px;background:#b42318;color:#fff;font-weight:700;cursor:pointer}
@@ -55,6 +57,12 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <button type="button" data-ftab="vouchers" onclick="financeTab('vouchers')">🧾 Search</button>
       <button type="button" data-ftab="backup" onclick="financeTab('backup')">💾 Excel / Backup</button>
     </div>
+    <div class="orderBar" id="finOrderBar">
+      <b>📅 View all records:</b>
+      <button type="button" id="ord_old" onclick="setViewOrder('old')">⬇ Old → New</button>
+      <button type="button" id="ord_new" onclick="setViewOrder('new')">⬆ New → Old</button>
+      <span style="color:#5b6b7a;font-size:11px">Running balance always follows true date order.</span>
+    </div>
     <section id="finPanelDashboard">
       <h3>School Cash & Fund Dashboard</h3>
       <div class="finance-cards"><div class="finance-card">Today's Receipt<b id="finTodayReceipt">₹0.00</b></div><div class="finance-card">Today's Payment<b id="finTodayPayment">₹0.00</b></div><div class="finance-card">Net Today<b id="finTodayNet">₹0.00</b></div><div class="finance-card">Total Entries<b id="finEntryCount">0</b></div></div>
@@ -66,7 +74,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <h3 id="finEntryTitle">Daily Cash / Bank Entry</h3>
       <input type="hidden" id="finEditId">
       <div class="finance-grid">
-        <div class="finance-field"><label>Date *</label><input type="date" id="finDate"></div>
+        <div class="finance-field"><label>Date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finDate"></div>
         <div class="finance-field"><label>Fund / Account *</label><select id="finFund"></select></div>
         <div class="finance-field"><label>Voucher / Sl No.</label><input id="finVoucher"></div>
         <div class="finance-field"><label>Entry Type *</label><select id="finType"><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div>
@@ -80,7 +88,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
     </section>
     <section id="finPanelLedger" style="display:none">
       <h3>Fund Ledger</h3>
-      <div class="finance-grid"><div class="finance-field"><label>Fund</label><select id="finLedgerFund" onchange="renderFinanceLedger()"></select></div><div class="finance-field"><label>From Date</label><input type="date" id="finFrom" onchange="renderFinanceLedger()"></div><div class="finance-field"><label>To Date</label><input type="date" id="finTo" onchange="renderFinanceLedger()"></div><div class="finance-field"><label>Search</label><input id="finLedgerSearch" oninput="renderFinanceLedger()"></div></div>
+      <div class="finance-grid"><div class="finance-field"><label>Fund</label><select id="finLedgerFund" onchange="renderFinanceLedger()"></select></div><div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finFrom" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finTo" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>Search</label><input id="finLedgerSearch" oninput="renderFinanceLedger()"></div></div>
       <div class="finance-status" id="finLedgerStatus"></div>
       <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
@@ -124,12 +132,60 @@ function finMoney(n){return '₹'+(Number(n)||0).toLocaleString('en-IN',{minimum
 function finCurrentUser(){return auth.currentUser?(auth.currentUser.email||auth.currentUser.uid):'unknown';}
 function finDateValue(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'&&XLSX?.SSF){let d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:'';}let x=String(v).trim();let m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}m=x.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`:'';}
 
+/* ---------- View order (Fund Ledger + Search) ---------- */
+let viewOrder = 'old';   // 'old' = oldest first, 'new' = newest first
+try{ const sv = localStorage.getItem('tfhsViewOrder'); if(sv==='old'||sv==='new') viewOrder = sv; }catch(e){}
+function orderRows(rows){ return viewOrder==='new' ? rows.slice().reverse() : rows; }
+function updateOrderButtons(){
+  const o=document.getElementById('ord_old'), n=document.getElementById('ord_new');
+  if(o) o.classList.toggle('active', viewOrder==='old');
+  if(n) n.classList.toggle('active', viewOrder==='new');
+}
+function setViewOrder(mode){
+  viewOrder = mode;
+  try{ localStorage.setItem('tfhsViewOrder', mode); }catch(e){}
+  updateOrderButtons();
+  renderFinanceLedger(); renderFinanceVouchers();
+}
+/* Oldest-first comparator: date, then time entered, then id (numeric-aware so imported row 2 sorts before row 10) */
+function finCompare(a,b){
+  const d = String(a.date||'').localeCompare(String(b.date||''));
+  if(d) return d;
+  const ca = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+  const cb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+  if(ca!==cb) return ca-cb;
+  return String(a.id).localeCompare(String(b.id), undefined, {numeric:true});
+}
+
+/* ---------- Dates: shown and typed as DD-MM-YYYY (stored as YYYY-MM-DD) ---------- */
+function fmtDMY(d){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||''));
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : String(d||'');
+}
+function dmyToISO(s){
+  const m=/^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s||'').trim());
+  if(!m) return '';
+  const d=+m[1], mo=+m[2], y=+m[3], dt=new Date(y,mo-1,d);
+  return (dt.getFullYear()===y && dt.getMonth()===mo-1 && dt.getDate()===d) ? `${m[3]}-${m[2]}-${m[1]}` : '';
+}
+function dmyVal(id){ const el=document.getElementById(id); return el ? dmyToISO(el.value) : ''; }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+document.addEventListener('input', e=>{
+  const t=e.target;
+  if(t && t.classList && t.classList.contains('dmy')){
+    const d=t.value.replace(/\D/g,'').slice(0,8);
+    const out = d.length>4 ? d.slice(0,2)+'-'+d.slice(2,4)+'-'+d.slice(4) : d.length>2 ? d.slice(0,2)+'-'+d.slice(2) : d;
+    if(out!==t.value) t.value=out;
+  }
+}, true);
+updateOrderButtons();
+
 function initFinanceSelectors(){
   let a = document.getElementById('finFund'), b = document.getElementById('finLedgerFund');
   if(a && !a.options.length) FINANCE_FUNDS.forEach(x => a.add(new Option(x[1], x[0])));
   if(b && !b.options.length){ b.add(new Option('All Funds','')); FINANCE_FUNDS.forEach(x => b.add(new Option(x[1], x[0]))); }
   let d = document.getElementById('finDate');
-  if(d && !d.value) d.value = new Date().toISOString().slice(0,10);
+  if(d && !d.value) d.value = fmtDMY(todayISO());
 }
 
 auth.onAuthStateChanged(async u => {
@@ -261,7 +317,7 @@ async function loadFinanceFromFirebase(){
 function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFinanceVouchers(); }
 
 function renderFinanceDashboard(){
-  let t = new Date().toISOString().slice(0,10);
+  let t = todayISO();
   let r = financeRows.filter(x => x.date === t && x.type === 'receipt').reduce((a,x) => a + finNum(x.amount), 0);
   let p = financeRows.filter(x => x.date === t && x.type === 'payment').reduce((a,x) => a + finNum(x.amount), 0);
   
@@ -291,10 +347,10 @@ function renderFinanceDashboard(){
 
 function finFilteredRows(){
   let f = document.getElementById('finLedgerFund')?.value || '';
-  let from = document.getElementById('finFrom')?.value || '';
-  let to = document.getElementById('finTo')?.value || '';
+  let from = dmyVal('finFrom');
+  let to = dmyVal('finTo');
   let q = (document.getElementById('finLedgerSearch')?.value || '').toLowerCase();
-  return financeRows.filter(x => (!f || x.fund === f) && (!from || x.date >= from) && (!to || x.date <= to) && (!q || [x.particulars, x.voucher, x.remarks].some(v => String(v||'').toLowerCase().includes(q)))).sort((a,b) => String(a.date).localeCompare(String(b.date)) || (String(a.id).localeCompare(String(b.id))));
+  return financeRows.filter(x => (!f || x.fund === f) && (!from || x.date >= from) && (!to || x.date <= to) && (!q || [x.particulars, x.voucher, x.remarks].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
 }
 
 function actionButtons(id){ return `<button onclick="editFinanceEntry('${id}')">✏️ Edit</button> <button class="danger" onclick="deleteFinanceEntry('${id}')">🗑 Delete</button>`; }
@@ -304,9 +360,9 @@ function renderFinanceLedger(){
   let body = document.getElementById('finLedgerBody');
   let status = document.getElementById('finLedgerStatus');
   if(body){
-    body.innerHTML = rows.map(x => {
-      bal += (x.type === 'receipt' ? 1 : -1) * finNum(x.amount);
-      return `<tr><td>${finEsc(x.date)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${x.type==='receipt'?finMoney(x.amount):''}</td><td>${x.type==='payment'?finMoney(x.amount):''}</td><td>${finMoney(bal)}</td><td>${finEsc(x.remarks)}</td><td>${actionButtons(x.id)}</td></tr>`;
+    const calc = rows.map(x => { bal += (x.type === 'receipt' ? 1 : -1) * finNum(x.amount); return {x, rb:bal}; });
+    body.innerHTML = orderRows(calc).map(({x, rb}) => {
+      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${x.type==='receipt'?finMoney(x.amount):''}</td><td>${x.type==='payment'?finMoney(x.amount):''}</td><td>${finMoney(rb)}</td><td>${finEsc(x.remarks)}</td><td>${actionButtons(x.id)}</td></tr>`;
     }).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
   }
   if(status) status.textContent = `Showing ${rows.length} entries.`;
@@ -315,10 +371,10 @@ function renderFinanceLedger(){
 function renderFinanceVouchers(){
   let q = (document.getElementById('finVoucherSearch')?.value || '').toLowerCase();
   let t = document.getElementById('finVoucherType')?.value || '';
-  let rows = financeRows.filter(x => (!t || x.type === t) && (!q || [x.voucher, x.particulars, x.fund].some(v => String(v||'').toLowerCase().includes(q)))).sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  let rows = financeRows.filter(x => (!t || x.type === t) && (!q || [x.voucher, x.particulars, x.fund].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
   let body = document.getElementById('finVoucherBody');
   if(body){
-    body.innerHTML = rows.map(x => `<tr><td>${finEsc(x.date)}</td><td>${finEsc(x.type)}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${finMoney(x.amount)}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="7">No entries found.</td></tr>';
+    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.type)}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${finMoney(x.amount)}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="7">No entries found.</td></tr>';
   }
 }
 
@@ -330,6 +386,8 @@ function financeTab(tab){
     if(btn) btn.classList.toggle('active', t === tab);
   });
   if(tab === 'entry') initFinanceSelectors();
+  const ob = document.getElementById('finOrderBar');
+  if(ob) ob.style.display = (tab === 'ledger' || tab === 'vouchers') ? 'flex' : 'none';
 }
 
 function financeCalculateAmount(){
@@ -349,7 +407,7 @@ function clearFinanceEntry(){
   let status = document.getElementById('finEntryStatus');
   if(status) status.textContent = '';
   let d = document.getElementById('finDate');
-  if(d) d.value = new Date().toISOString().slice(0,10);
+  if(d) d.value = fmtDMY(todayISO());
 }
 
 
@@ -393,7 +451,7 @@ function editFinanceEntry(id){
   document.getElementById('finEditId').value = id;
   document.getElementById('finEntryTitle').textContent = 'Edit Existing Entry';
   document.getElementById('finSaveBtn').textContent = 'Update Entry';
-  document.getElementById('finDate').value = x.date;
+  document.getElementById('finDate').value = fmtDMY(x.date);
   document.getElementById('finFund').value = x.fund;
   document.getElementById('finVoucher').value = x.voucher || '';
   document.getElementById('finType').value = x.type;
@@ -409,7 +467,9 @@ async function saveFinanceEntry(){
   if(!auth.currentUser) return alert('Please sign in.');
   financeCalculateAmount();
   let id = document.getElementById('finEditId').value;
-  let date = document.getElementById('finDate').value;
+  let dateRaw = document.getElementById('finDate').value.trim();
+  let date = dmyToISO(dateRaw);
+  if(dateRaw && !date) return alert('Enter the date as DD-MM-YYYY (for example 05-04-2026).');
   let fund = document.getElementById('finFund').value;
   let type = document.getElementById('finType').value;
   let part = document.getElementById('finParticulars').value.trim();
@@ -438,7 +498,7 @@ async function saveFinanceEntry(){
 async function deleteFinanceEntry(id){
   if(!verifyEditDeletePassword('delete')) return;
   let x = financeRows.find(r => r.id === id);
-  if(!x || !confirm(`Delete this ${x.type} entry?\n${x.date} | ${x.particulars} | ${finMoney(x.amount)}`)) return;
+  if(!x || !confirm(`Delete this ${x.type} entry?\n${fmtDMY(x.date)} | ${x.particulars} | ${finMoney(x.amount)}`)) return;
   try {
     await db.collection('financeTransactions').doc(id).delete();
     // The live Firebase listener will remove the deleted row.
@@ -456,7 +516,7 @@ function exportFinanceJSON(){
 function exportFinanceCSV(){
   let head = ['Date','Fund','Type','Voucher','Particulars','Quantity','Rate','Amount','Remarks','Created By'];
   let esc = x => '"' + String(x??'').replace(/"/g,'""') + '"';
-  let rows = financeRows.map(x => [x.date, FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund, x.type, x.voucher, x.particulars, x.quantity, x.rate, x.amount, x.remarks, x.createdBy].map(esc).join(','));
+  let rows = orderRows(financeRows.slice().sort(finCompare)).map(x => [fmtDMY(x.date), FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund, x.type, x.voucher, x.particulars, x.quantity, x.rate, x.amount, x.remarks, x.createdBy].map(esc).join(','));
   let b = new Blob([[head.map(esc).join(','), ...rows].join('\n')], {type:'text/csv'});
   let a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TFHS_CashBook.csv'; a.click();
 }
