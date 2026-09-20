@@ -24,6 +24,45 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
 .deleteSecurityTop{margin:10px 0;padding:12px;border:2px solid #b42318;border-radius:7px;background:#fff3cd;color:#7a1f1f;font-weight:700}
 .deleteSecurityTop input{padding:9px;border:2px solid #b42318;border-radius:5px;width:280px;max-width:100%;box-sizing:border-box}
 .deleteSecurityTop button{padding:9px 12px;margin-left:6px;border:0;border-radius:5px;background:#b42318;color:#fff;font-weight:700;cursor:pointer}
+/* ===== Receipt + Payment on one entry / Payment slip ===== */
+.amt-nil{color:#9aa8b6}.finance-table td.num,.finance-table th.num{text-align:right}
+.slip-preview{margin-top:12px;overflow:auto;background:#e9edf2;padding:10px;border-radius:6px;border:1px solid #d4dde7}.slip-preview:empty{display:none}
+.finance-field input:disabled{background:#eef1f4;color:#8a97a5}
+.finance-field input.zf{text-align:right;font-weight:700}
+.finance-callout{grid-column:1/-1;margin:0 0 2px;padding:7px 10px;background:#eef7ee;border:1px solid #b9dcbc;border-radius:5px;font-size:12px;color:#1b4d20}
+.slipPage{width:194mm;margin:0 auto 8mm;display:flex;flex-direction:column;gap:5mm}
+.pslip{box-sizing:border-box;width:194mm;height:133mm;border:1.2mm double #000;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+.pslip .p-top{height:9mm;border-bottom:.35mm solid #000;display:flex;flex-shrink:0}
+.pslip .p-sl{background:#ff0!important;color:#f00;font-size:18pt;line-height:9mm;min-width:26mm;padding:0 8mm;text-align:center;border-right:.35mm solid #000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pslip .p-head{flex-shrink:0;text-align:center;border-bottom:.35mm solid #000;padding:1mm 0 1.3mm;font-family:'Lucida Console','Courier New',monospace;font-weight:700}
+.pslip .p-head .t1{font-size:15pt}.pslip .p-head .t2{font-size:10pt;margin-top:.8mm}
+.pslip .p-upper{flex:1;display:flex;flex-direction:column;min-height:0}
+.pslip .p-payto{font-family:'Aptos Display',Calibri,Arial,sans-serif;font-size:16pt;padding:1.2mm 2mm .6mm}
+.pslip .p-row{display:flex;align-items:center;padding:0 2mm;min-height:8mm}
+.pslip .p-lab{width:31mm;flex-shrink:0;font-size:8pt}
+.pslip .p-val{width:47mm;flex-shrink:0;font-family:Calibri,Arial,sans-serif}
+.pslip .p-val.v1{font-size:14pt}.pslip .p-val.v2{font-size:11pt;font-weight:700}.pslip .p-val.v2 small{font-size:7.5pt;font-weight:400;margin-left:1mm}
+.pslip .p-r1{flex:1;display:flex;align-items:baseline;gap:2mm}.pslip .p-r1 .dt{font-size:9pt;font-weight:700;font-family:'Footlight MT Light',Georgia,serif}.pslip .p-r1 .fy{font-size:14pt;font-weight:700;font-family:'Footlight MT Light',Georgia,serif;margin-left:1mm}
+.pslip .p-bank{flex:1;font-family:'Arial Narrow',Arial,sans-serif;font-size:8pt;font-weight:700}
+.pslip .p-amt{display:flex;justify-content:space-between;width:66mm;font-family:'Lucida Calligraphy','Lucida Handwriting','Brush Script MT',cursive;font-weight:700;font-size:16pt;padding-left:3mm;box-sizing:border-box}
+.pslip .p-words{flex:1;font-family:'Blackadder ITC','Palatino Linotype',Georgia,serif;font-weight:700;font-size:15pt;line-height:1.1;padding:1mm 0}
+.pslip .p-purpose{font-family:'Arial Narrow',Arial,sans-serif;font-size:14pt;padding:0 2mm;line-height:1.15}
+.pslip .p-sign{margin-top:auto;display:flex;justify-content:space-between;padding:0 14mm 5mm 18mm;font-size:9pt;font-weight:700}
+.pslip .p-lower{border-top:.35mm solid #000;flex-shrink:0}
+.pslip .p-recv{font-size:11pt;text-decoration:underline;padding:1.3mm 2mm 0}
+.pslip .p-foot{display:flex;align-items:flex-end;height:20mm;padding:0 0 2mm 2mm}
+.pslip .p-foot .d{width:38mm;text-align:center;font-size:9pt}.pslip .p-foot .f{width:22mm;text-align:center;font-size:9pt}
+.pslip .p-foot .who{flex:1;display:flex;flex-direction:column}.pslip .p-foot .box{height:7mm;border:.3mm solid #000;border-right:none;margin-bottom:2mm}
+.pslip .p-foot .nm{text-align:center;font-family:'Ink Free','Segoe Print',cursive;font-weight:700;font-size:14pt}
+#slipPrintRoot{display:none}
+@media print{
+  @page{size:A4 portrait;margin:6mm}
+  body.print-slips{background:#fff}
+  body.print-slips #appRoot,body.print-slips #loginOverlay{display:none!important}
+  body.print-slips #slipPrintRoot{display:block}
+  body.print-slips .slipPage{margin:0;break-after:page;page-break-after:always}
+  body.print-slips .slipPage:last-child{break-after:auto;page-break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -53,6 +92,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
     <div class="finance-tabs">
       <button type="button" class="active" data-ftab="dashboard" onclick="financeTab('dashboard')">📊 Dashboard</button>
       <button type="button" data-ftab="entry" onclick="financeTab('entry')">➕ Add / Edit Entry</button>
+      <button type="button" data-ftab="slip" onclick="financeTab('slip')">🧾 Payment Slip</button>
       <button type="button" data-ftab="ledger" onclick="financeTab('ledger')">📒 Fund Ledger</button>
       <button type="button" data-ftab="vouchers" onclick="financeTab('vouchers')">🧾 Search</button>
       <button type="button" data-ftab="backup" onclick="financeTab('backup')">💾 Excel / Backup</button>
@@ -74,28 +114,52 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <h3 id="finEntryTitle">Daily Cash / Bank Entry</h3>
       <input type="hidden" id="finEditId">
       <div class="finance-grid">
+        <div class="finance-callout">One entry = one date. Type the <b>Receipt</b> and the <b>Payment</b> together — the side you don't use is saved as <b>0</b>.</div>
         <div class="finance-field"><label>Date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finDate"></div>
-        <div class="finance-field"><label>Fund / Account *</label><select id="finFund"></select></div>
+        <div class="finance-field"><label>Fund / PB *</label><select id="finFund" onchange="syncFundFields()"></select><div class="finance-note" id="finFundHint"></div></div>
         <div class="finance-field"><label>Voucher / Sl No.</label><input id="finVoucher"></div>
-        <div class="finance-field"><label>Entry Type *</label><select id="finType"><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div>
-        <div class="finance-field finance-span-2"><label>Particulars *</label><input id="finParticulars"></div>
+        <div class="finance-field"><label>Payment Slip SL No. <span style="font-weight:400">(blank = next)</span></label><input type="number" min="1" step="1" id="finSlipNo"></div>
+        <div class="finance-field finance-span-2"><label>Particulars / Purpose *</label><input id="finParticulars"></div>
+        <div class="finance-field finance-span-2"><label>Paid To <span style="font-weight:400">(needed for the slip)</span></label><input id="finPaidTo"></div>
+        <div class="finance-field"><label>Receipt Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finReceipt" value="0"></div>
+        <div class="finance-field"><label>Payment Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finPayment" value="0"></div>
         <div class="finance-field"><label>Quantity</label><input type="number" step="any" id="finQty"></div><div class="finance-field"><label>Rate</label><input type="number" step="any" id="finRate"></div>
-        <div class="finance-field"><label>Amount *</label><input type="number" step="0.01" min="0" id="finAmount"></div>
+        <div class="finance-field"><label>Cheque No. <span style="font-weight:400">(PB only)</span></label><input id="finCheque"></div>
+        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(PB only)</span></label><input id="finAccNo"></div>
         <div class="finance-field finance-span-2"><label>Remarks</label><textarea id="finRemarks"></textarea></div>
       </div>
-      <div class="finance-actions"><button onclick="financeCalculateAmount()">Calculate Amount</button><button onclick="saveFinanceEntry()" id="finSaveBtn">Save Entry</button><button class="secondary" onclick="clearFinanceEntry()">Clear / New</button></div>
+      <div class="finance-actions"><button onclick="financeCalculateAmount()">Calculate Qty × Rate</button><select id="finCalcTarget" style="padding:6px"><option value="payment">→ into Payment</option><option value="receipt">→ into Receipt</option></select><button onclick="saveFinanceEntry(false)" id="finSaveBtn">Save Entry</button><button onclick="saveFinanceEntry(true)" id="finSaveSlipBtn" style="background:#0b7a3b">Save &amp; Generate Payment Slip</button><button class="secondary" onclick="clearFinanceEntry()">Clear / New</button></div>
       <div class="finance-status" id="finEntryStatus"></div>
+    </section>
+    <section id="finPanelSlip" style="display:none">
+      <h3>🧾 Payment Slip (Declaration)</h3>
+      <div class="finance-grid">
+        <div class="finance-field"><label>Fund / PB</label><select id="slipFund" onchange="slipFilterChanged()"></select></div>
+        <div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipFrom" oninput="slipFilterChanged()"></div>
+        <div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipTo" oninput="slipFilterChanged()"></div>
+        <div class="finance-field"><label>Start SL No. *</label><input type="number" min="1" step="1" id="slipStartSl" oninput="slipStartTouched=true"></div>
+        <div class="finance-field"><label>A/c No. (PB slips)</label><input id="slipAcc"></div>
+        <div class="finance-field"><label>Left signatory</label><input id="slipLeftLabel" value="Hostel in Charge"></div>
+        <div class="finance-field finance-span-2"><label>Bank line printed on slip</label><input id="slipBankLine" value="Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA"></div>
+      </div>
+      <div class="finance-note" style="margin:6px 0">Shows the <b>payment</b> entries for the chosen Fund/PB and dates. Tick the ones to print. Entries that already have an SL keep it (reprint); new ones are numbered from <b>Start SL No.</b> and the SL is saved with the entry.</div>
+      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th>Purpose</th><th class="num">Amount</th><th>Cheque No. (PB)</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
+      <div class="finance-actions"><button onclick="generateSlips()">🧾 Generate Slips</button><button id="slipPrintBtn" onclick="printSlips()" disabled style="background:#0b7a3b">🖨 Print (2 per A4)</button><button class="secondary" onclick="slipSelectAll(true)">Tick all</button><button class="secondary" onclick="slipSelectAll(false)">Untick all</button></div>
+      <div class="finance-status" id="slipStatus"></div>
+      <div class="slip-preview" id="slipPreview"></div>
     </section>
     <section id="finPanelLedger" style="display:none">
       <h3>Fund Ledger</h3>
       <div class="finance-grid"><div class="finance-field"><label>Fund</label><select id="finLedgerFund" onchange="renderFinanceLedger()"></select></div><div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finFrom" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finTo" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>Search</label><input id="finLedgerSearch" oninput="renderFinanceLedger()"></div></div>
       <div class="finance-status" id="finLedgerStatus"></div>
-      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
+      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th class="num">Balance</th><th>Remarks</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
-    <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Type</th><th>Fund</th><th>Voucher</th><th>Particulars</th><th>Amount</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
+    <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Has Receipt</option><option value="payment">Has Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Fund / PB</th><th>Voucher</th><th>Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
     <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available live on other computers using the same login.</div></section>
   </div>
 </div>
+
+<div id="slipPrintRoot"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -131,6 +195,20 @@ function finNum(v){if(typeof v==='number')return isFinite(v)?v:0;let n=parseFloa
 function finMoney(n){return '₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function finCurrentUser(){return auth.currentUser?(auth.currentUser.email||auth.currentUser.uid):'unknown';}
 function finDateValue(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'&&XLSX?.SSF){let d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:'';}let x=String(v).trim();let m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}m=x.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`:'';}
+
+/* ---------- Receipt + Payment on the SAME entry (a side that is not used is stored as 0) ----------
+   New entries store  receipt  and  payment  (both always numbers).
+   Older entries (type + amount, incl. Excel imports) are read through the same two helpers. */
+function rAmt(x){ return (x.receipt!==undefined||x.payment!==undefined) ? finNum(x.receipt) : (x.type==='receipt' ? finNum(x.amount) : 0); }
+function pAmt(x){ return (x.receipt!==undefined||x.payment!==undefined) ? finNum(x.payment) : (x.type==='payment' ? finNum(x.amount) : 0); }
+function moneyCell(v){ return v>0 ? finMoney(v) : '<span class="amt-nil">'+finMoney(0)+'</span>'; }
+function fundInfo(code){ const f=FINANCE_FUNDS.find(x=>x[0]===code); return f ? {code:f[0],label:f[1],kind:f[2]} : {code:code,label:code||'',kind:'cash'}; }
+function finFY(iso){ const m=/^(\d{4})-(\d{2})/.exec(iso||''); if(!m) return ''; const y=+m[1], mo=+m[2], s=mo>=4?y:y-1; return s+'-'+String((s+1)%100).padStart(2,'0'); }
+function elv(id){ const e=document.getElementById(id); return e ? e.value : ''; }
+
+/* 0 is typed in automatically for the unused side; click selects it so typing replaces it */
+document.addEventListener('focusin', e=>{ if(e.target && e.target.classList && e.target.classList.contains('zf')) setTimeout(()=>{ try{e.target.select();}catch(_){} },0); });
+document.addEventListener('focusout', e=>{ if(e.target && e.target.classList && e.target.classList.contains('zf') && String(e.target.value).trim()==='') e.target.value='0'; });
 
 /* ---------- View order (Fund Ledger + Search) ---------- */
 let viewOrder = 'old';   // 'old' = oldest first, 'new' = newest first
@@ -186,6 +264,7 @@ function initFinanceSelectors(){
   if(b && !b.options.length){ b.add(new Option('All Funds','')); FINANCE_FUNDS.forEach(x => b.add(new Option(x[1], x[0]))); }
   let d = document.getElementById('finDate');
   if(d && !d.value) d.value = fmtDMY(todayISO());
+  syncFundFields();
 }
 
 auth.onAuthStateChanged(async u => {
@@ -318,8 +397,8 @@ function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFin
 
 function renderFinanceDashboard(){
   let t = todayISO();
-  let r = financeRows.filter(x => x.date === t && x.type === 'receipt').reduce((a,x) => a + finNum(x.amount), 0);
-  let p = financeRows.filter(x => x.date === t && x.type === 'payment').reduce((a,x) => a + finNum(x.amount), 0);
+  let r = financeRows.filter(x => x.date === t).reduce((a,x) => a + rAmt(x), 0);
+  let p = financeRows.filter(x => x.date === t).reduce((a,x) => a + pAmt(x), 0);
   
   let rElem = document.getElementById('finTodayReceipt');
   let pElem = document.getElementById('finTodayPayment');
@@ -336,11 +415,11 @@ function renderFinanceDashboard(){
   
   if(fundSummary){
     fundSummary.innerHTML = FINANCE_FUNDS.map(f => {
-      let rr = financeRows.filter(x => x.fund === f[0] && x.type === 'receipt').reduce((a,x) => a + finNum(x.amount), 0);
-      let pp = financeRows.filter(x => x.fund === f[0] && x.type === 'payment').reduce((a,x) => a + finNum(x.amount), 0);
+      let mine = financeRows.filter(x => x.fund === f[0]);
+      let rr = mine.reduce((a,x) => a + rAmt(x), 0);
+      let pp = mine.reduce((a,x) => a + pAmt(x), 0);
       let ob = finNum(financeOpeningBalances[f[0]]?.openingBalance);
-      let n = financeRows.filter(x => x.fund === f[0]).length;
-      return `<tr><td>${finEsc(f[1])}</td><td>${finMoney(rr)}</td><td>${finMoney(pp)}</td><td>${finMoney(ob + rr - pp)}</td><td>${n}</td></tr>`;
+      return `<tr><td>${finEsc(f[1])}</td><td>${finMoney(rr)}</td><td>${finMoney(pp)}</td><td>${finMoney(ob + rr - pp)}</td><td>${mine.length}</td></tr>`;
     }).join('');
   }
 }
@@ -350,20 +429,21 @@ function finFilteredRows(){
   let from = dmyVal('finFrom');
   let to = dmyVal('finTo');
   let q = (document.getElementById('finLedgerSearch')?.value || '').toLowerCase();
-  return financeRows.filter(x => (!f || x.fund === f) && (!from || x.date >= from) && (!to || x.date <= to) && (!q || [x.particulars, x.voucher, x.remarks].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
+  return financeRows.filter(x => (!f || x.fund === f) && (!from || x.date >= from) && (!to || x.date <= to) && (!q || [x.particulars, x.voucher, x.remarks, x.paidTo].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
 }
 
-function actionButtons(id){ return `<button onclick="editFinanceEntry('${id}')">✏️ Edit</button> <button class="danger" onclick="deleteFinanceEntry('${id}')">🗑 Delete</button>`; }
+function actionButtons(id){ const x = financeRows.find(r => r.id === id); const slip = x && pAmt(x) > 0 ? `<button onclick="slipForEntry('${id}')">🧾 Slip</button> ` : ''; return slip + `<button onclick="editFinanceEntry('${id}')">✏️ Edit</button> <button class="danger" onclick="deleteFinanceEntry('${id}')">🗑 Delete</button>`; }
 
 function renderFinanceLedger(){
   let rows = finFilteredRows(), fund = document.getElementById('finLedgerFund')?.value || '', bal = fund ? finNum(financeOpeningBalances[fund]?.openingBalance) : 0;
   let body = document.getElementById('finLedgerBody');
   let status = document.getElementById('finLedgerStatus');
   if(body){
-    const calc = rows.map(x => { bal += (x.type === 'receipt' ? 1 : -1) * finNum(x.amount); return {x, rb:bal}; });
+    const calc = rows.map(x => { bal += rAmt(x) - pAmt(x); return {x, rb:bal}; });
     body.innerHTML = orderRows(calc).map(({x, rb}) => {
-      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${x.type==='receipt'?finMoney(x.amount):''}</td><td>${x.type==='payment'?finMoney(x.amount):''}</td><td>${finMoney(rb)}</td><td>${finEsc(x.remarks)}</td><td>${actionButtons(x.id)}</td></tr>`;
-    }).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
+      const part = finEsc(x.particulars) + (x.paidTo ? ` <small style="color:#5b6b7a">→ ${finEsc(x.paidTo)}</small>` : '');
+      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td>${part}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td class="num">${finMoney(rb)}</td><td>${finEsc(x.remarks)}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`;
+    }).join('') || '<tr><td colspan="9">No entries found.</td></tr>';
   }
   if(status) status.textContent = `Showing ${rows.length} entries.`;
 }
@@ -371,21 +451,22 @@ function renderFinanceLedger(){
 function renderFinanceVouchers(){
   let q = (document.getElementById('finVoucherSearch')?.value || '').toLowerCase();
   let t = document.getElementById('finVoucherType')?.value || '';
-  let rows = financeRows.filter(x => (!t || x.type === t) && (!q || [x.voucher, x.particulars, x.fund].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
+  let rows = financeRows.filter(x => (!t || (t === 'receipt' ? rAmt(x) > 0 : pAmt(x) > 0)) && (!q || [x.voucher, x.particulars, x.fund, x.paidTo].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
   let body = document.getElementById('finVoucherBody');
   if(body){
-    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.type)}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td>${finMoney(x.amount)}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="7">No entries found.</td></tr>';
+    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
   }
 }
 
 function financeTab(tab){
-  ['dashboard','entry','ledger','vouchers','backup'].forEach(t => {
+  ['dashboard','entry','slip','ledger','vouchers','backup'].forEach(t => {
     let p = document.getElementById('finPanel'+t[0].toUpperCase()+t.slice(1));
     if(p) p.style.display = t === tab ? 'block' : 'none';
     let btn = document.querySelector(`[data-ftab="${t}"]`);
     if(btn) btn.classList.toggle('active', t === tab);
   });
   if(tab === 'entry') initFinanceSelectors();
+  if(tab === 'slip') initSlipTab();
   const ob = document.getElementById('finOrderBar');
   if(ob) ob.style.display = (tab === 'ledger' || tab === 'vouchers') ? 'flex' : 'none';
 }
@@ -393,21 +474,37 @@ function financeTab(tab){
 function financeCalculateAmount(){
   let q = finNum(document.getElementById('finQty')?.value);
   let r = finNum(document.getElementById('finRate')?.value);
-  if(q && r) document.getElementById('finAmount').value = (q * r).toFixed(2);
+  if(q && r){
+    const target = document.getElementById('finCalcTarget')?.value === 'receipt' ? 'finReceipt' : 'finPayment';
+    document.getElementById(target).value = (q * r).toFixed(2);
+  }
 }
 
-function clearFinanceEntry(){
+/* Cash fund -> slip prints BY HAND / CASH PAYMENT.  PB (bank) fund -> cheque no. and A/c no. are used. */
+function syncFundFields(){
+  const f = fundInfo(document.getElementById('finFund')?.value);
+  const bank = f.kind === 'bank';
+  ['finCheque','finAccNo'].forEach(id => { const el = document.getElementById(id); if(el){ el.disabled = !bank; if(!bank) el.value = ''; } });
+  const h = document.getElementById('finFundHint');
+  if(h) h.textContent = bank ? 'PB / bank account: slip shows Cheque No. and A/c No.' : 'Cash fund: slip shows BY HAND / CASH PAYMENT.';
+}
+
+function clearFinanceEntry(keepDateFund){
+  const keepDate = keepDateFund === true;   // after a save: stay on the same date & fund for the next entry
+  const date = document.getElementById('finDate')?.value;
   document.getElementById('finEditId').value = '';
   document.getElementById('finEntryTitle').textContent = 'Daily Cash / Bank Entry';
   document.getElementById('finSaveBtn').textContent = 'Save Entry';
-  ['finVoucher','finParticulars','finQty','finRate','finAmount','finRemarks'].forEach(id => {
+  ['finVoucher','finSlipNo','finParticulars','finPaidTo','finQty','finRate','finCheque','finAccNo','finRemarks'].forEach(id => {
     let el = document.getElementById(id);
     if(el) el.value = '';
   });
+  ['finReceipt','finPayment'].forEach(id => { let el = document.getElementById(id); if(el) el.value = '0'; });
   let status = document.getElementById('finEntryStatus');
-  if(status) status.textContent = '';
+  if(!keepDate && status) status.textContent = '';
   let d = document.getElementById('finDate');
-  if(d) d.value = fmtDMY(todayISO());
+  if(d) d.value = keepDate && date ? date : fmtDMY(todayISO());
+  syncFundFields();
 }
 
 
@@ -453,52 +550,107 @@ function editFinanceEntry(id){
   document.getElementById('finSaveBtn').textContent = 'Update Entry';
   document.getElementById('finDate').value = fmtDMY(x.date);
   document.getElementById('finFund').value = x.fund;
+  syncFundFields();
   document.getElementById('finVoucher').value = x.voucher || '';
-  document.getElementById('finType').value = x.type;
+  document.getElementById('finSlipNo').value = x.slipNo || '';
   document.getElementById('finParticulars').value = x.particulars || '';
+  document.getElementById('finPaidTo').value = x.paidTo || '';
   document.getElementById('finQty').value = x.quantity || '';
   document.getElementById('finRate').value = x.rate || '';
-  document.getElementById('finAmount').value = x.amount || '';
+  document.getElementById('finReceipt').value = rAmt(x);
+  document.getElementById('finPayment').value = pAmt(x);
+  document.getElementById('finCheque').value = x.chequeNo || '';
+  document.getElementById('finAccNo').value = x.accNo || '';
   document.getElementById('finRemarks').value = x.remarks || '';
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-async function saveFinanceEntry(){
+async function saveFinanceEntry(withSlip){
   if(!auth.currentUser) return alert('Please sign in.');
-  financeCalculateAmount();
   let id = document.getElementById('finEditId').value;
   let dateRaw = document.getElementById('finDate').value.trim();
   let date = dmyToISO(dateRaw);
   if(dateRaw && !date) return alert('Enter the date as DD-MM-YYYY (for example 05-04-2026).');
   let fund = document.getElementById('finFund').value;
-  let type = document.getElementById('finType').value;
   let part = document.getElementById('finParticulars').value.trim();
-  let amt = finNum(document.getElementById('finAmount').value);
-  if(!date || !fund || !type || !part || amt <= 0) return alert('Date, Fund, Type, Particulars and Amount are required.');
-  
-  let row = {date, fund, type, voucher: document.getElementById('finVoucher').value.trim(), particulars: part, quantity: finNum(document.getElementById('finQty').value), rate: finNum(document.getElementById('finRate').value), amount: amt, remarks: document.getElementById('finRemarks').value.trim(), createdBy: finCurrentUser(), source: 'web-cashbook', updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-  
+
+  // Qty x Rate only fills its target box when that box is still 0
+  let q = finNum(document.getElementById('finQty').value), rt = finNum(document.getElementById('finRate').value);
+  if(q && rt){
+    const tid = document.getElementById('finCalcTarget')?.value === 'receipt' ? 'finReceipt' : 'finPayment';
+    if(finNum(document.getElementById(tid).value) === 0) document.getElementById(tid).value = (q * rt).toFixed(2);
+  }
+  // Receipt and Payment are always both stored: the unused side is 0
+  let rec = finNum(document.getElementById('finReceipt').value);
+  let pay = finNum(document.getElementById('finPayment').value);
+  document.getElementById('finReceipt').value = rec;
+  document.getElementById('finPayment').value = pay;
+
+  if(!date || !fund || !part) return alert('Date, Fund / PB and Particulars are required.');
+  if(rec < 0 || pay < 0) return alert('Amounts cannot be negative.');
+  if(rec <= 0 && pay <= 0) return alert('Enter a Receipt amount, a Payment amount, or both (the other stays 0).');
+
+  const paidTo = document.getElementById('finPaidTo').value.trim();
+  const fi = fundInfo(fund);
+  const cheque = fi.kind === 'bank' ? document.getElementById('finCheque').value.trim() : '';
+  const accNo  = fi.kind === 'bank' ? document.getElementById('finAccNo').value.trim() : '';
+
+  let slipNo = null, fy = finFY(date);
+  if(withSlip){
+    if(pay <= 0) return alert('A Payment Slip needs a Payment amount.');
+    if(!paidTo) return alert('Enter "Paid To" — it is printed on the slip.');
+    slipNo = parseInt(document.getElementById('finSlipNo').value, 10);
+    if(!(slipNo > 0)) slipNo = nextSlipNo(fy);
+    const clash = usedSlipNos(fy).get(slipNo);
+    if(clash && clash.id !== id) return alert(`Slip SL No ${slipNo} (F.Y. ${fy}) is already used for "${clash.particulars}". Choose a different SL No.`);
+  } else {
+    const typed = parseInt(document.getElementById('finSlipNo').value, 10);
+    if(typed > 0) slipNo = typed;
+  }
+
+  let row = {date, fund, receipt: rec, payment: pay,
+    type: rec > 0 && pay > 0 ? 'both' : (rec > 0 ? 'receipt' : 'payment'),   // kept so older readers still work
+    amount: rec > 0 && pay > 0 ? rec + pay : (rec > 0 ? rec : pay),
+    voucher: document.getElementById('finVoucher').value.trim(), particulars: part, paidTo, chequeNo: cheque, accNo,
+    quantity: q, rate: rt, remarks: document.getElementById('finRemarks').value.trim(),
+    createdBy: finCurrentUser(), source: 'web-cashbook', updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+  if(slipNo){ row.slipNo = slipNo; row.slipFy = fy; }
+
   try {
     if(id){
       await db.collection('financeTransactions').doc(id).set(row, {merge:true});
       document.getElementById('finEntryStatus').textContent = 'Updated successfully. Synced to Firebase.';
     } else {
       row.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      let ref = await db.collection('financeTransactions').add(row);
+      await db.collection('financeTransactions').add(row);
       // The onSnapshot listener will add the saved row from Firebase.
       document.getElementById('finEntryStatus').textContent = 'Added successfully. Synced to Firebase.';
     }
-    clearFinanceEntry();
-    renderAll();
   } catch(e) {
-    alert('Save failed: ' + e.message);
+    return alert('Save failed: ' + e.message);
+  }
+
+  clearFinanceEntry(true);
+  renderAll();
+
+  if(withSlip){
+    const slip = {sl: slipNo, date, payee: paidTo, cheque, fund, acc: accNo, amount: pay, purpose: part,
+                  bankLine: elv('slipBankLine') || SLIP_DEFAULT_BANK, leftLabel: elv('slipLeftLabel') || 'Hostel in Charge'};
+    financeTab('slip');
+    document.getElementById('slipFund').value = fund;
+    document.getElementById('slipFrom').value = fmtDMY(date);
+    document.getElementById('slipTo').value = fmtDMY(date);
+    slipStartTouched = false;
+    renderSlipList();
+    showSlipPreview([slip]);
+    document.getElementById('slipStatus').textContent = `Saved. Payment Slip SL ${slipNo} is ready — press Print.`;
   }
 }
 
 async function deleteFinanceEntry(id){
   if(!verifyEditDeletePassword('delete')) return;
   let x = financeRows.find(r => r.id === id);
-  if(!x || !confirm(`Delete this ${x.type} entry?\n${fmtDMY(x.date)} | ${x.particulars} | ${finMoney(x.amount)}`)) return;
+  if(!x || !confirm(`Delete this entry?\n${fmtDMY(x.date)} | ${x.particulars} | Receipt ${finMoney(rAmt(x))} | Payment ${finMoney(pAmt(x))}`)) return;
   try {
     await db.collection('financeTransactions').doc(id).delete();
     // The live Firebase listener will remove the deleted row.
@@ -514,11 +666,171 @@ function exportFinanceJSON(){
 }
 
 function exportFinanceCSV(){
-  let head = ['Date','Fund','Type','Voucher','Particulars','Quantity','Rate','Amount','Remarks','Created By'];
+  let head = ['Date','Fund','Voucher','Slip SL','Particulars','Paid To','Quantity','Rate','Receipt','Payment','Remarks','Created By'];
   let esc = x => '"' + String(x??'').replace(/"/g,'""') + '"';
-  let rows = orderRows(financeRows.slice().sort(finCompare)).map(x => [fmtDMY(x.date), FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund, x.type, x.voucher, x.particulars, x.quantity, x.rate, x.amount, x.remarks, x.createdBy].map(esc).join(','));
+  let rows = orderRows(financeRows.slice().sort(finCompare)).map(x => [fmtDMY(x.date), FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund, x.voucher, x.slipNo, x.particulars, x.paidTo, x.quantity, x.rate, rAmt(x), pAmt(x), x.remarks, x.createdBy].map(esc).join(','));
   let b = new Blob([[head.map(esc).join(','), ...rows].join('\n')], {type:'text/csv'});
   let a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TFHS_CashBook.csv'; a.click();
+}
+
+/* =====================================================================
+   PAYMENT SLIP  (same layout as the DECLARATION sheet of the Excel file)
+   Fund / PB dropdown decides CASH (BY HAND / CASH PAYMENT) or PB (cheque no. + A/c no.)
+   SL NO is typed in (or taken as the next free number for the financial year).
+   ===================================================================== */
+const SLIP_SCHOOL_1 = 'TALDANGRA FULMATI HIGH SCHOOL [H.S.]';
+const SLIP_SCHOOL_2 = 'P.O. TALDANGRA. * Block: TALDANGRA* DIST. BANKURA';
+const SLIP_DEFAULT_BANK = 'Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA';
+let slipCurrent = [], slipCandidateRows = [], slipStartTouched = false;
+
+function numWordsIN(n){
+  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two=k=>k<20?a[k]:b[Math.floor(k/10)]+(k%10?' '+a[k%10]:'');
+  const three=k=>{let s='';if(k>=100){s=a[Math.floor(k/100)]+' Hundred';k%=100;if(k)s+=' ';}return s+(k?two(k):'');};
+  if(n===0) return 'Zero';
+  const out=[]; const cr=Math.floor(n/1e7); n%=1e7; const lk=Math.floor(n/1e5); n%=1e5; const th=Math.floor(n/1e3); n%=1e3;
+  if(cr) out.push(three(cr)+' Crore'); if(lk) out.push(two(lk)+' Lakh'); if(th) out.push(two(th)+' Thousand'); if(n) out.push(three(n));
+  return out.join(' ');
+}
+function amountInWords(amt){
+  const total = Math.round(finNum(amt)*100), r = Math.floor(total/100), p = total%100;
+  return 'Rupees ' + numWordsIN(r) + (p ? ' and ' + numWordsIN(p) + ' Paise' : '') + ' Only';
+}
+function usedSlipNos(fy){ return new Map(financeRows.filter(x => x.slipNo && x.slipFy === fy).map(x => [Number(x.slipNo), x])); }
+function nextSlipNo(fy){ let m = 0; financeRows.forEach(x => { if(x.slipFy === fy && Number(x.slipNo) > m) m = Number(x.slipNo); }); return m + 1; }
+
+/* one slip.  s = {sl,date(ISO),payee,cheque,fund,acc,amount,purpose,bankLine,leftLabel} */
+function slipHTML(s){
+  const f = fundInfo(s.fund), bank = f.kind === 'bank';
+  const chequeTxt = bank ? (s.cheque ? finEsc(s.cheque) : '&nbsp;') : 'BY HAND';
+  const fromTxt = bank ? finEsc(f.label) + (s.acc ? ' &mdash; A/c ' + finEsc(s.acc) : '') : 'CASH PAYMENT <small>[' + finEsc(f.label) + ']</small>';
+  const amt = finNum(s.amount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return `<div class="pslip">
+  <div class="p-top"><div class="p-sl">${finEsc(s.sl)}</div></div>
+  <div class="p-head"><div class="t1">${finEsc(SLIP_SCHOOL_1)}</div><div class="t2">${finEsc(SLIP_SCHOOL_2)}</div></div>
+  <div class="p-upper">
+    <div class="p-payto">PAID TO-${finEsc(s.payee)}</div>
+    <div class="p-row"><span class="p-lab">Bearing Cheque NO</span><span class="p-val v1">${chequeTxt}</span><span class="p-r1"><span style="font-size:8pt">Dt.</span><span class="dt">${finEsc(fmtDMY(s.date))}</span><span class="fy">F.Y. ${finEsc(finFY(s.date))}</span></span></div>
+    <div class="p-row"><span class="p-lab">From A/c No / CASH</span><span class="p-val v2">${fromTxt}</span><span class="p-bank">${finEsc(s.bankLine || SLIP_DEFAULT_BANK)}</span></div>
+    <div class="p-row" style="min-height:10mm"><span class="p-lab">Cheque /Cash Amt</span><span class="p-amt"><span>Rs.</span><span>${amt}</span></span></div>
+    <div class="p-row"><span class="p-lab">In words Rupees</span><span class="p-words">${finEsc(amountInWords(s.amount))}</span></div>
+    <div class="p-purpose">Purpose:-${finEsc(s.purpose)}</div>
+    <div class="p-sign"><span>${finEsc(s.leftLabel || 'Hostel in Charge')}</span><span>Headmaster</span></div>
+  </div>
+  <div class="p-lower">
+    <div class="p-recv">Received from Headmaster /Administrator</div>
+    <div class="p-foot"><span class="d">DATE</span><span class="f">For</span><div class="who"><div class="box"></div><div class="nm">${finEsc(s.payee)}</div></div></div>
+  </div>
+</div>`;
+}
+function slipPagesHTML(slips){
+  let out = '';
+  for(let i = 0; i < slips.length; i += 2) out += '<div class="slipPage">' + slipHTML(slips[i]) + (slips[i+1] ? slipHTML(slips[i+1]) : '') + '</div>';
+  return out;
+}
+function showSlipPreview(slips){
+  slipCurrent = slips;
+  document.getElementById('slipPreview').innerHTML = slipPagesHTML(slips);
+  document.getElementById('slipPrintBtn').disabled = !slips.length;
+}
+function printSlips(){
+  if(!slipCurrent.length) return alert('Generate the slips first.');
+  document.getElementById('slipPrintRoot').innerHTML = slipPagesHTML(slipCurrent);
+  document.body.classList.add('print-slips');
+  const done = () => { document.body.classList.remove('print-slips'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 60);
+}
+
+/* ---------- Payment Slip tab: pick Fund/PB + dates, tick entries, generate ---------- */
+function initSlipTab(){
+  const sel = document.getElementById('slipFund');
+  if(sel && !sel.options.length){ sel.add(new Option('All Funds / PB','')); FINANCE_FUNDS.forEach(x => sel.add(new Option(x[1], x[0]))); }
+  const f = document.getElementById('slipFrom'), t = document.getElementById('slipTo');
+  if(f && !f.value) f.value = fmtDMY(todayISO());
+  if(t && !t.value) t.value = fmtDMY(todayISO());
+  renderSlipList();
+}
+function slipFilterChanged(){ renderSlipList(); }
+function slipSelectAll(on){ document.querySelectorAll('#slipBody .sp-chk').forEach(c => c.checked = on); }
+
+function renderSlipList(preselectId){
+  const body = document.getElementById('slipBody'); if(!body) return;
+  const fund = elv('slipFund'), from = dmyVal('slipFrom'), to = dmyVal('slipTo');
+  slipCandidateRows = financeRows.filter(x => pAmt(x) > 0 && (!fund || x.fund === fund) && (!from || x.date >= from) && (!to || x.date <= to)).sort(finCompare);
+  body.innerHTML = slipCandidateRows.map(x => {
+    const bank = fundInfo(x.fund).kind === 'bank';
+    const on = preselectId ? x.id === preselectId : !x.slipNo;
+    return `<tr data-id="${finEsc(x.id)}"><td><input type="checkbox" class="sp-chk" ${on?'checked':''}></td><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(fundInfo(x.fund).label)}</td>` +
+      `<td><input class="sp-payee" style="min-width:150px" value="${finEsc(x.paidTo||'')}"></td>` +
+      `<td><input class="sp-purpose" style="min-width:230px" value="${finEsc(x.particulars||'')}"></td>` +
+      `<td class="num">${finMoney(pAmt(x))}</td>` +
+      `<td><input class="sp-cheque" style="width:110px" value="${finEsc(x.chequeNo||'')}" ${bank?'':'disabled placeholder="BY HAND"'}></td>` +
+      `<td>${x.slipNo ? finEsc(x.slipNo) : '&mdash;'}</td></tr>`;
+  }).join('') || '<tr><td colspan="8">No payment entries for this Fund / PB and date range.</td></tr>';
+  if(!slipStartTouched){
+    const st = document.getElementById('slipStartSl');
+    if(st) st.value = nextSlipNo(finFY(from || todayISO()));
+  }
+}
+
+function slipForEntry(id){
+  const x = financeRows.find(r => r.id === id); if(!x) return;
+  financeTab('slip');
+  document.getElementById('slipFund').value = x.fund;
+  document.getElementById('slipFrom').value = fmtDMY(x.date);
+  document.getElementById('slipTo').value = fmtDMY(x.date);
+  slipStartTouched = false;
+  renderSlipList(id);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function generateSlips(){
+  if(!auth.currentUser) return alert('Please sign in.');
+  const trs = [...document.querySelectorAll('#slipBody tr[data-id]')].filter(tr => tr.querySelector('.sp-chk').checked);
+  if(!trs.length) return alert('Tick at least one payment entry.');
+  let next = parseInt(elv('slipStartSl'), 10);
+  const acc = elv('slipAcc').trim(), bankLine = elv('slipBankLine').trim() || SLIP_DEFAULT_BANK, left = elv('slipLeftLabel').trim() || 'Hostel in Charge';
+  const slips = [], saves = [], taken = {};
+  for(const tr of trs){
+    const x = financeRows.find(r => r.id === tr.dataset.id); if(!x) continue;
+    const payee = tr.querySelector('.sp-payee').value.trim();
+    const purpose = tr.querySelector('.sp-purpose').value.trim() || x.particulars || '';
+    const cheque = tr.querySelector('.sp-cheque').disabled ? '' : tr.querySelector('.sp-cheque').value.trim();
+    if(!payee) return alert(`Enter "Paid To" for: ${x.particulars}`);
+    const fy = finFY(x.date);
+    let no = Number(x.slipNo) || 0;
+    if(!no){
+      if(!(next > 0)) return alert('Enter the Start SL No.');
+      no = next++;
+      const clash = usedSlipNos(fy).get(no);
+      if(clash && clash.id !== x.id) return alert(`SL No ${no} (F.Y. ${fy}) is already used for "${clash.particulars}". Change the Start SL No.`);
+    }
+    const key = fy + '#' + no;
+    if(taken[key]) return alert(`SL No ${no} (F.Y. ${fy}) is used twice in this batch. Change the Start SL No.`);
+    taken[key] = true;
+    const bank = fundInfo(x.fund).kind === 'bank';
+    const accNo = bank ? (acc || x.accNo || '') : '';
+    slips.push({sl: no, date: x.date, payee, cheque, fund: x.fund, acc: accNo, amount: pAmt(x), purpose, bankLine, leftLabel: left});
+    saves.push({id: x.id, data: {slipNo: no, slipFy: fy, paidTo: payee, chequeNo: cheque, accNo, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}});
+  }
+  if(!slips.length) return;
+  const status = document.getElementById('slipStatus');
+  try {
+    for(let i = 0; i < saves.length; i += 400){
+      const b = db.batch();
+      saves.slice(i, i + 400).forEach(s => b.set(db.collection('financeTransactions').doc(s.id), s.data, {merge:true}));
+      await b.commit();
+    }
+    status.textContent = `${slips.length} slip(s) generated — SL numbers saved with the entries. Press Print (2 slips per A4 page).`;
+  } catch(e) {
+    status.textContent = `${slips.length} slip(s) generated, but the SL numbers could not be saved: ${e.message}`;
+  }
+  showSlipPreview(slips);
+  slipStartTouched = false;
+  renderSlipList();
+  renderAll();
 }
 
 function findHeader(rows){
