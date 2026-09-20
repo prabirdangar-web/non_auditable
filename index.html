@@ -133,8 +133,9 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
         <div class="finance-field"><label>Receipt Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finReceipt" value="0"></div>
         <div class="finance-field"><label>Payment Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finPayment" value="0"></div>
         <div class="finance-field"><label>Quantity</label><input type="number" step="any" id="finQty"></div><div class="finance-field"><label>Rate</label><input type="number" step="any" id="finRate"></div>
-        <div class="finance-field"><label>Cheque No. <span style="font-weight:400">(PB only)</span></label><input id="finCheque"></div>
-        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(PB only)</span></label><input id="finAccNo"></div>
+        <div class="finance-field"><label>Cheque No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finCheque"></div>
+        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finAccNo"></div>
+        <div class="finance-field"><label>Slip paid via</label><select id="finSlipMode" onchange="syncFundFields()"><option value="">Auto (as per Fund)</option><option value="cash">Cash (By Hand)</option><option value="bank">Bank A/c (Cheque)</option></select></div>
         <div class="finance-field finance-span-2"><label>Remarks</label><textarea id="finRemarks"></textarea></div>
       </div>
       <div class="finance-actions"><button onclick="financeCalculateAmount()">Calculate Qty × Rate</button><select id="finCalcTarget" style="padding:6px"><option value="payment">→ into Payment</option><option value="receipt">→ into Receipt</option></select><button onclick="saveFinanceEntry(false)" id="finSaveBtn">Save Entry</button><button onclick="saveFinanceEntry(true)" id="finSaveSlipBtn" style="background:#0b7a3b">Save &amp; Generate Payment Slip</button><button class="secondary" onclick="clearFinanceEntry()">Clear / New</button></div>
@@ -147,12 +148,12 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
         <div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipFrom" oninput="slipFilterChanged()"></div>
         <div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipTo" oninput="slipFilterChanged()"></div>
         <div class="finance-field"><label>Start SL No. *</label><input type="number" min="1" step="1" id="slipStartSl" oninput="slipStartTouched=true"></div>
-        <div class="finance-field"><label>A/c No. (PB slips)</label><input id="slipAcc"></div>
+        <div class="finance-field"><label>Default A/c No. (bank slips)</label><input id="slipAcc"></div>
         <div class="finance-field"><label>Left signatory</label><input id="slipLeftLabel" value="Hostel in Charge"></div>
         <div class="finance-field finance-span-2"><label>Bank line printed on slip</label><input id="slipBankLine" value="Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA"></div>
       </div>
       <div class="finance-note" style="margin:6px 0">Shows the <b>payment</b> entries for the chosen Fund/PB and dates. Tick the ones to print. Entries that already have an SL keep it (reprint); new ones are numbered from <b>Start SL No.</b> and the SL is saved with the entry.</div>
-      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th class="wrap">Purpose (full Particulars)</th><th class="num">Amount</th><th>Cheque No. (PB)</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
+      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th class="wrap">Purpose (full Particulars)</th><th class="num">Amount</th><th>Paid via</th><th>Cheque No.</th><th>A/c No.</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
       <div class="finance-actions"><button onclick="generateSlips()">🧾 Generate Slips</button><button id="slipPrintBtn" onclick="printSlips()" disabled style="background:#0b7a3b">🖨 Print (2 per A4)</button><button class="secondary" onclick="slipSelectAll(true)">Tick all</button><button class="secondary" onclick="slipSelectAll(false)">Untick all</button></div>
       <div class="finance-status" id="slipStatus"></div>
       <div class="slip-preview" id="slipPreview"></div>
@@ -493,10 +494,11 @@ function financeCalculateAmount(){
 /* Cash fund -> slip prints BY HAND / CASH PAYMENT.  PB (bank) fund -> cheque no. and A/c no. are used. */
 function syncFundFields(){
   const f = fundInfo(document.getElementById('finFund')?.value);
-  const bank = f.kind === 'bank';
-  ['finCheque','finAccNo'].forEach(id => { const el = document.getElementById(id); if(el){ el.disabled = !bank; if(!bank) el.value = ''; } });
+  const mode = document.getElementById('finSlipMode')?.value || '';
+  const bank = slipIsBank(f.code, mode);
+  ['finCheque','finAccNo'].forEach(id => { const el = document.getElementById(id); if(el) el.disabled = false; });   // always editable: a cash fund can be paid through the bank A/c
   const h = document.getElementById('finFundHint');
-  if(h) h.textContent = bank ? 'PB / bank account: slip shows Cheque No. and A/c No.' : 'Cash fund: slip shows BY HAND / CASH PAYMENT.';
+  if(h) h.textContent = bank ? 'Slip will show Cheque No. and A/c No. (paid through bank).' : 'Slip will show BY HAND / CASH PAYMENT. Choose "Slip paid via → Bank A/c" if this was paid through the bank.';
 }
 
 function clearFinanceEntry(keepDateFund){
@@ -505,7 +507,7 @@ function clearFinanceEntry(keepDateFund){
   document.getElementById('finEditId').value = '';
   document.getElementById('finEntryTitle').textContent = 'Daily Cash / Bank Entry';
   document.getElementById('finSaveBtn').textContent = 'Save Entry';
-  ['finVoucher','finSlipNo','finParticulars','finPaidTo','finQty','finRate','finCheque','finAccNo','finRemarks'].forEach(id => {
+  ['finVoucher','finSlipNo','finParticulars','finPaidTo','finQty','finRate','finCheque','finAccNo','finRemarks','finSlipMode'].forEach(id => {
     let el = document.getElementById(id);
     if(el) el.value = '';
   });
@@ -572,6 +574,8 @@ function editFinanceEntry(id){
   document.getElementById('finPayment').value = pAmt(x);
   document.getElementById('finCheque').value = x.chequeNo || '';
   document.getElementById('finAccNo').value = x.accNo || '';
+  document.getElementById('finSlipMode').value = x.slipMode || '';
+  syncFundFields();
   document.getElementById('finRemarks').value = x.remarks || '';
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -603,8 +607,10 @@ async function saveFinanceEntry(withSlip){
 
   const paidTo = document.getElementById('finPaidTo').value.trim();
   const fi = fundInfo(fund);
-  const cheque = fi.kind === 'bank' ? document.getElementById('finCheque').value.trim() : '';
-  const accNo  = fi.kind === 'bank' ? document.getElementById('finAccNo').value.trim() : '';
+  const slipMode = document.getElementById('finSlipMode').value || '';
+  const viaBank = slipIsBank(fund, slipMode);
+  const cheque = viaBank ? document.getElementById('finCheque').value.trim() : '';
+  const accNo  = viaBank ? document.getElementById('finAccNo').value.trim() : '';
 
   let slipNo = null, fy = finFY(date);
   if(withSlip){
@@ -622,7 +628,7 @@ async function saveFinanceEntry(withSlip){
   let row = {date, fund, receipt: rec, payment: pay,
     type: rec > 0 && pay > 0 ? 'both' : (rec > 0 ? 'receipt' : 'payment'),   // kept so older readers still work
     amount: rec > 0 && pay > 0 ? rec + pay : (rec > 0 ? rec : pay),
-    voucher: document.getElementById('finVoucher').value.trim(), particulars: part, paidTo, chequeNo: cheque, accNo,
+    voucher: document.getElementById('finVoucher').value.trim(), particulars: part, paidTo, chequeNo: cheque, accNo, slipMode,
     quantity: q, rate: rt, remarks: document.getElementById('finRemarks').value.trim(),
     createdBy: finCurrentUser(), source: 'web-cashbook', updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
   if(slipNo){ row.slipNo = slipNo; row.slipFy = fy; }
@@ -645,7 +651,7 @@ async function saveFinanceEntry(withSlip){
   renderAll();
 
   if(withSlip){
-    const slip = {sl: slipNo, date, payee: paidTo, cheque, fund, acc: accNo, amount: pay, purpose: part,
+    const slip = {sl: slipNo, date, payee: paidTo, cheque, fund, mode: slipMode, acc: accNo || elv('slipAcc').trim(), amount: pay, purpose: part,
                   bankLine: elv('slipBankLine') || SLIP_DEFAULT_BANK, leftLabel: elv('slipLeftLabel') || 'Hostel in Charge'};
     financeTab('slip');
     document.getElementById('slipFund').value = fund;
@@ -711,6 +717,8 @@ function amountInWords(amt){
 function usedSlipNos(fy){ return new Map(financeRows.filter(x => x.slipNo && x.slipFy === fy).map(x => [Number(x.slipNo), x])); }
 function nextSlipNo(fy){ let m = 0; financeRows.forEach(x => { if(x.slipFy === fy && Number(x.slipNo) > m) m = Number(x.slipNo); }); return m + 1; }
 
+/* Paid via: '' = follow the fund (PB = bank, others = cash) | 'cash' | 'bank'.  A cash-fund payment may really go through the bank A/c. */
+function slipIsBank(fund, mode){ return mode === 'bank' ? true : mode === 'cash' ? false : fundInfo(fund).kind === 'bank'; }
 /* longer Particulars step the Purpose font down so the FULL text always fits on the slip */
 function slipPurposeSize(t){ const n = String(t||'').length; return n <= 150 ? 14 : n <= 230 ? 12 : n <= 330 ? 10.5 : n <= 450 ? 9 : 8; }
 /* auto-grow a textarea to show all its text */
@@ -718,7 +726,7 @@ function finAutoGrow(el){ if(!el) return; el.style.height = 'auto'; if(el.scroll
 function finGrowAll(root){ (root || document).querySelectorAll('textarea.sp-purpose, textarea.finParticularsBox').forEach(finAutoGrow); }
 /* one slip.  s = {sl,date(ISO),payee,cheque,fund,acc,amount,purpose,bankLine,leftLabel} */
 function slipHTML(s){
-  const f = fundInfo(s.fund), bank = f.kind === 'bank';
+  const f = fundInfo(s.fund), bank = slipIsBank(s.fund, s.mode);
   const chequeTxt = bank ? (s.cheque ? finEsc(s.cheque) : '&nbsp;') : 'BY HAND';
   const fromTxt = bank ? finEsc(f.label) + (s.acc ? ' &mdash; A/c ' + finEsc(s.acc) : '') : 'CASH PAYMENT <small>[' + finEsc(f.label) + ']</small>';
   const amt = finNum(s.amount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -776,15 +784,17 @@ function renderSlipList(preselectId){
   const fund = elv('slipFund'), from = dmyVal('slipFrom'), to = dmyVal('slipTo');
   slipCandidateRows = financeRows.filter(x => pAmt(x) > 0 && (!fund || x.fund === fund) && (!from || x.date >= from) && (!to || x.date <= to)).sort(finCompare);
   body.innerHTML = slipCandidateRows.map(x => {
-    const bank = fundInfo(x.fund).kind === 'bank';
+    const mode = x.slipMode || '';
     const on = preselectId ? x.id === preselectId : !x.slipNo;
     return `<tr data-id="${finEsc(x.id)}"><td><input type="checkbox" class="sp-chk" ${on?'checked':''}></td><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(fundInfo(x.fund).label)}</td>` +
       `<td class="wrap-s"><input class="sp-payee" style="min-width:150px" value="${finEsc(x.paidTo||'')}"></td>` +
       `<td class="wrap"><textarea class="sp-purpose" rows="2" oninput="finAutoGrow(this)">${finEsc(x.particulars||'')}</textarea></td>` +
       `<td class="num">${finMoney(pAmt(x))}</td>` +
-      `<td><input class="sp-cheque" style="width:110px" value="${finEsc(x.chequeNo||'')}" ${bank?'':'disabled placeholder="BY HAND"'}></td>` +
+      `<td><select class="sp-mode" title="Cash funds can also be paid through the bank A/c"><option value=""${mode===''?' selected':''}>Auto (${fundInfo(x.fund).kind==='bank'?'Bank':'Cash'})</option><option value="cash"${mode==='cash'?' selected':''}>Cash</option><option value="bank"${mode==='bank'?' selected':''}>Bank A/c</option></select></td>` +
+      `<td><input class="sp-cheque" style="width:110px" value="${finEsc(x.chequeNo||'')}" placeholder="Cheque No."></td>` +
+      `<td><input class="sp-acc" style="width:130px" value="${finEsc(x.accNo||'')}" placeholder="A/c No."></td>` +
       `<td>${x.slipNo ? finEsc(x.slipNo) : '&mdash;'}</td></tr>`;
-  }).join('') || '<tr><td colspan="8">No payment entries for this Fund / PB and date range.</td></tr>';
+  }).join('') || '<tr><td colspan="10">No payment entries for this Fund / PB and date range.</td></tr>';
   finGrowAll(body);
   if(!slipStartTouched){
     const st = document.getElementById('slipStartSl');
@@ -814,7 +824,9 @@ async function generateSlips(){
     const x = financeRows.find(r => r.id === tr.dataset.id); if(!x) continue;
     const payee = tr.querySelector('.sp-payee').value.trim();
     const purpose = tr.querySelector('.sp-purpose').value.replace(/\s*[\r\n]+\s*/g, ' ').trim() || x.particulars || '';
-    const cheque = tr.querySelector('.sp-cheque').disabled ? '' : tr.querySelector('.sp-cheque').value.trim();
+    const mode = tr.querySelector('.sp-mode').value;
+    const viaBank = slipIsBank(x.fund, mode);
+    const cheque = viaBank ? tr.querySelector('.sp-cheque').value.trim() : '';
     if(!payee) return alert(`Enter "Paid To" for: ${x.particulars}`);
     const fy = finFY(x.date);
     let no = Number(x.slipNo) || 0;
@@ -827,10 +839,9 @@ async function generateSlips(){
     const key = fy + '#' + no;
     if(taken[key]) return alert(`SL No ${no} (F.Y. ${fy}) is used twice in this batch. Change the Start SL No.`);
     taken[key] = true;
-    const bank = fundInfo(x.fund).kind === 'bank';
-    const accNo = bank ? (acc || x.accNo || '') : '';
-    slips.push({sl: no, date: x.date, payee, cheque, fund: x.fund, acc: accNo, amount: pAmt(x), purpose, bankLine, leftLabel: left});
-    saves.push({id: x.id, data: {slipNo: no, slipFy: fy, paidTo: payee, chequeNo: cheque, accNo, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}});
+    const accNo = viaBank ? (tr.querySelector('.sp-acc').value.trim() || acc || x.accNo || '') : '';
+    slips.push({sl: no, date: x.date, payee, cheque, fund: x.fund, mode, acc: accNo, amount: pAmt(x), purpose, bankLine, leftLabel: left});
+    saves.push({id: x.id, data: {slipNo: no, slipFy: fy, paidTo: payee, chequeNo: cheque, accNo, slipMode: mode, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}});
   }
   if(!slips.length) return;
   const status = document.getElementById('slipStatus');
