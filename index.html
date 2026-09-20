@@ -63,6 +63,15 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
   body.print-slips .slipPage{margin:0;break-after:page;page-break-after:always}
   body.print-slips .slipPage:last-child{break-after:auto;page-break-after:auto}
 }
+
+/* ===== Full-text wrap for Particulars / Purpose (on-screen viewing) ===== */
+.finance-table td{vertical-align:top}
+.finance-table td.wrap,.finance-table th.wrap{white-space:normal;word-break:break-word;overflow-wrap:anywhere;min-width:260px;line-height:1.4}
+.finance-table td.wrap-s,.finance-table th.wrap-s{white-space:normal;word-break:break-word;overflow-wrap:anywhere;min-width:150px;line-height:1.4}
+.finance-table td.wrap small{display:block;margin-top:2px}
+.finance-table textarea.sp-purpose,.finance-field textarea.finParticularsBox{width:100%;min-width:260px;box-sizing:border-box;padding:6px;border:1px solid #b9c5d1;border-radius:4px;font:inherit;font-size:12px;line-height:1.4;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;field-sizing:content;min-height:38px}
+.finance-field textarea.finParticularsBox{font-size:13px;min-height:55px}
+.pslip .p-purpose{overflow-wrap:anywhere;word-break:break-word}
 </style>
 </head>
 <body>
@@ -119,7 +128,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
         <div class="finance-field"><label>Fund / PB *</label><select id="finFund" onchange="syncFundFields()"></select><div class="finance-note" id="finFundHint"></div></div>
         <div class="finance-field"><label>Voucher / Sl No.</label><input id="finVoucher"></div>
         <div class="finance-field"><label>Payment Slip SL No. <span style="font-weight:400">(blank = next)</span></label><input type="number" min="1" step="1" id="finSlipNo"></div>
-        <div class="finance-field finance-span-2"><label>Particulars / Purpose *</label><input id="finParticulars"></div>
+        <div class="finance-field finance-span-4"><label>Particulars / Purpose * <span style="font-weight:400">(full details — printed as Purpose on the Payment Slip)</span></label><textarea id="finParticulars" class="finParticularsBox" rows="2" oninput="finAutoGrow(this)"></textarea></div>
         <div class="finance-field finance-span-2"><label>Paid To <span style="font-weight:400">(needed for the slip)</span></label><input id="finPaidTo"></div>
         <div class="finance-field"><label>Receipt Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finReceipt" value="0"></div>
         <div class="finance-field"><label>Payment Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finPayment" value="0"></div>
@@ -143,7 +152,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
         <div class="finance-field finance-span-2"><label>Bank line printed on slip</label><input id="slipBankLine" value="Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA"></div>
       </div>
       <div class="finance-note" style="margin:6px 0">Shows the <b>payment</b> entries for the chosen Fund/PB and dates. Tick the ones to print. Entries that already have an SL keep it (reprint); new ones are numbered from <b>Start SL No.</b> and the SL is saved with the entry.</div>
-      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th>Purpose</th><th class="num">Amount</th><th>Cheque No. (PB)</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
+      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th class="wrap">Purpose (full Particulars)</th><th class="num">Amount</th><th>Cheque No. (PB)</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
       <div class="finance-actions"><button onclick="generateSlips()">🧾 Generate Slips</button><button id="slipPrintBtn" onclick="printSlips()" disabled style="background:#0b7a3b">🖨 Print (2 per A4)</button><button class="secondary" onclick="slipSelectAll(true)">Tick all</button><button class="secondary" onclick="slipSelectAll(false)">Untick all</button></div>
       <div class="finance-status" id="slipStatus"></div>
       <div class="slip-preview" id="slipPreview"></div>
@@ -152,9 +161,9 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <h3>Fund Ledger</h3>
       <div class="finance-grid"><div class="finance-field"><label>Fund</label><select id="finLedgerFund" onchange="renderFinanceLedger()"></select></div><div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finFrom" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finTo" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>Search</label><input id="finLedgerSearch" oninput="renderFinanceLedger()"></div></div>
       <div class="finance-status" id="finLedgerStatus"></div>
-      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th class="num">Balance</th><th>Remarks</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
+      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th class="num">Balance</th><th class="wrap-s">Remarks</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
-    <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Has Receipt</option><option value="payment">Has Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Fund / PB</th><th>Voucher</th><th>Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
+    <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Has Receipt</option><option value="payment">Has Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Fund / PB</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
     <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available live on other computers using the same login.</div></section>
   </div>
 </div>
@@ -442,7 +451,7 @@ function renderFinanceLedger(){
     const calc = rows.map(x => { bal += rAmt(x) - pAmt(x); return {x, rb:bal}; });
     body.innerHTML = orderRows(calc).map(({x, rb}) => {
       const part = finEsc(x.particulars) + (x.paidTo ? ` <small style="color:#5b6b7a">→ ${finEsc(x.paidTo)}</small>` : '');
-      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td>${part}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td class="num">${finMoney(rb)}</td><td>${finEsc(x.remarks)}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`;
+      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td class="wrap">${part}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td class="num">${finMoney(rb)}</td><td class="wrap-s">${finEsc(x.remarks)}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`;
     }).join('') || '<tr><td colspan="9">No entries found.</td></tr>';
   }
   if(status) status.textContent = `Showing ${rows.length} entries.`;
@@ -454,7 +463,7 @@ function renderFinanceVouchers(){
   let rows = financeRows.filter(x => (!t || (t === 'receipt' ? rAmt(x) > 0 : pAmt(x) > 0)) && (!q || [x.voucher, x.particulars, x.fund, x.paidTo].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
   let body = document.getElementById('finVoucherBody');
   if(body){
-    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td>${finEsc(x.particulars)}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
+    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td class="wrap">${finEsc(x.particulars)}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
   }
 }
 
@@ -467,6 +476,7 @@ function financeTab(tab){
   });
   if(tab === 'entry') initFinanceSelectors();
   if(tab === 'slip') initSlipTab();
+  setTimeout(finGrowAll, 0);
   const ob = document.getElementById('finOrderBar');
   if(ob) ob.style.display = (tab === 'ledger' || tab === 'vouchers') ? 'flex' : 'none';
 }
@@ -554,6 +564,7 @@ function editFinanceEntry(id){
   document.getElementById('finVoucher').value = x.voucher || '';
   document.getElementById('finSlipNo').value = x.slipNo || '';
   document.getElementById('finParticulars').value = x.particulars || '';
+  setTimeout(() => finAutoGrow(document.getElementById('finParticulars')), 0);
   document.getElementById('finPaidTo').value = x.paidTo || '';
   document.getElementById('finQty').value = x.quantity || '';
   document.getElementById('finRate').value = x.rate || '';
@@ -572,7 +583,7 @@ async function saveFinanceEntry(withSlip){
   let date = dmyToISO(dateRaw);
   if(dateRaw && !date) return alert('Enter the date as DD-MM-YYYY (for example 05-04-2026).');
   let fund = document.getElementById('finFund').value;
-  let part = document.getElementById('finParticulars').value.trim();
+  let part = document.getElementById('finParticulars').value.replace(/\s*[\r\n]+\s*/g, ' ').trim();
 
   // Qty x Rate only fills its target box when that box is still 0
   let q = finNum(document.getElementById('finQty').value), rt = finNum(document.getElementById('finRate').value);
@@ -700,6 +711,11 @@ function amountInWords(amt){
 function usedSlipNos(fy){ return new Map(financeRows.filter(x => x.slipNo && x.slipFy === fy).map(x => [Number(x.slipNo), x])); }
 function nextSlipNo(fy){ let m = 0; financeRows.forEach(x => { if(x.slipFy === fy && Number(x.slipNo) > m) m = Number(x.slipNo); }); return m + 1; }
 
+/* longer Particulars step the Purpose font down so the FULL text always fits on the slip */
+function slipPurposeSize(t){ const n = String(t||'').length; return n <= 150 ? 14 : n <= 230 ? 12 : n <= 330 ? 10.5 : n <= 450 ? 9 : 8; }
+/* auto-grow a textarea to show all its text */
+function finAutoGrow(el){ if(!el) return; el.style.height = 'auto'; if(el.scrollHeight > 0) el.style.height = (el.scrollHeight + 2) + 'px'; }
+function finGrowAll(root){ (root || document).querySelectorAll('textarea.sp-purpose, textarea.finParticularsBox').forEach(finAutoGrow); }
 /* one slip.  s = {sl,date(ISO),payee,cheque,fund,acc,amount,purpose,bankLine,leftLabel} */
 function slipHTML(s){
   const f = fundInfo(s.fund), bank = f.kind === 'bank';
@@ -715,7 +731,7 @@ function slipHTML(s){
     <div class="p-row"><span class="p-lab">From A/c No / CASH</span><span class="p-val v2">${fromTxt}</span><span class="p-bank">${finEsc(s.bankLine || SLIP_DEFAULT_BANK)}</span></div>
     <div class="p-row" style="min-height:10mm"><span class="p-lab">Cheque /Cash Amt</span><span class="p-amt"><span>Rs.</span><span>${amt}</span></span></div>
     <div class="p-row"><span class="p-lab">In words Rupees</span><span class="p-words">${finEsc(amountInWords(s.amount))}</span></div>
-    <div class="p-purpose">Purpose:-${finEsc(s.purpose)}</div>
+    <div class="p-purpose" style="font-size:${slipPurposeSize(s.purpose)}pt">Purpose:-${finEsc(s.purpose)}</div>
     <div class="p-sign"><span>${finEsc(s.leftLabel || 'Hostel in Charge')}</span><span>Headmaster</span></div>
   </div>
   <div class="p-lower">
@@ -763,12 +779,13 @@ function renderSlipList(preselectId){
     const bank = fundInfo(x.fund).kind === 'bank';
     const on = preselectId ? x.id === preselectId : !x.slipNo;
     return `<tr data-id="${finEsc(x.id)}"><td><input type="checkbox" class="sp-chk" ${on?'checked':''}></td><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(fundInfo(x.fund).label)}</td>` +
-      `<td><input class="sp-payee" style="min-width:150px" value="${finEsc(x.paidTo||'')}"></td>` +
-      `<td><input class="sp-purpose" style="min-width:230px" value="${finEsc(x.particulars||'')}"></td>` +
+      `<td class="wrap-s"><input class="sp-payee" style="min-width:150px" value="${finEsc(x.paidTo||'')}"></td>` +
+      `<td class="wrap"><textarea class="sp-purpose" rows="2" oninput="finAutoGrow(this)">${finEsc(x.particulars||'')}</textarea></td>` +
       `<td class="num">${finMoney(pAmt(x))}</td>` +
       `<td><input class="sp-cheque" style="width:110px" value="${finEsc(x.chequeNo||'')}" ${bank?'':'disabled placeholder="BY HAND"'}></td>` +
       `<td>${x.slipNo ? finEsc(x.slipNo) : '&mdash;'}</td></tr>`;
   }).join('') || '<tr><td colspan="8">No payment entries for this Fund / PB and date range.</td></tr>';
+  finGrowAll(body);
   if(!slipStartTouched){
     const st = document.getElementById('slipStartSl');
     if(st) st.value = nextSlipNo(finFY(from || todayISO()));
@@ -796,7 +813,7 @@ async function generateSlips(){
   for(const tr of trs){
     const x = financeRows.find(r => r.id === tr.dataset.id); if(!x) continue;
     const payee = tr.querySelector('.sp-payee').value.trim();
-    const purpose = tr.querySelector('.sp-purpose').value.trim() || x.particulars || '';
+    const purpose = tr.querySelector('.sp-purpose').value.replace(/\s*[\r\n]+\s*/g, ' ').trim() || x.particulars || '';
     const cheque = tr.querySelector('.sp-cheque').disabled ? '' : tr.querySelector('.sp-cheque').value.trim();
     if(!payee) return alert(`Enter "Paid To" for: ${x.particulars}`);
     const fy = finFY(x.date);
