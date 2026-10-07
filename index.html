@@ -72,6 +72,26 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
 .finance-table textarea.sp-purpose,.finance-field textarea.finParticularsBox{width:100%;min-width:260px;box-sizing:border-box;padding:6px;border:1px solid #b9c5d1;border-radius:4px;font:inherit;font-size:12px;line-height:1.4;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;field-sizing:content;min-height:38px}
 .finance-field textarea.finParticularsBox{font-size:13px;min-height:55px}
 .pslip .p-purpose{overflow-wrap:anywhere;word-break:break-word}
+
+/* ===== Suggestions + Report ===== */
+.finance-field{position:relative}
+.sug-box{position:absolute;left:0;right:0;top:100%;z-index:50;background:#fff;border:1px solid #9fb5cc;border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:300px;overflow:auto;margin-top:2px}
+.sug-head{padding:4px 8px;font-size:11px;color:#5b6b7a;background:#eef4fb;border-bottom:1px solid #d4dde7}
+.sug-item{padding:6px 8px;cursor:pointer;border-bottom:1px solid #eef2f6;font-size:13px}.sug-item.on,.sug-item:hover{background:#dbeafe}
+.sug-item .st{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.sug-item .sm{font-size:11px;color:#5b6b7a;margin-top:2px}
+.rep-sheet{background:#fff;border:1px solid #d4dde7;padding:12px;overflow:auto;margin-top:10px;color:#000}
+.rep-title{text-align:center;font-weight:700}.rep-title .t1{font-size:17px}.rep-title .t2{font-size:14px;margin-top:2px}.rep-title .t3{font-size:12px;margin:3px 0 10px;font-weight:400}
+.rep-tbl{width:100%;border-collapse:collapse;font-size:12px;color:#000}.rep-tbl.fixed{table-layout:fixed}
+.rep-tbl th,.rep-tbl td{border:1px solid #000;padding:3px 5px;vertical-align:top;overflow-wrap:anywhere}.rep-tbl th{background:#eaf1f8;text-align:center}
+.rep-tbl td.n{text-align:right;white-space:nowrap}.rep-tbl tr.tot td{font-weight:700;background:#f1f5f9}.rep-tbl .neg{color:#b00020}
+.rep-fund{font-weight:700;margin:14px 0 4px;font-size:13px}.rep-sign{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
+#reportPrintRoot{display:none}
+@media print{
+  body.print-report{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.print-report #appRoot,body.print-report #loginOverlay{display:none!important}
+  body.print-report #reportPrintRoot{display:block}
+  body.print-report .rep-tbl tr{break-inside:avoid}body.print-report .rep-fund{break-after:avoid}
+}
 </style>
 </head>
 <body>
@@ -104,6 +124,7 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <button type="button" data-ftab="slip" onclick="financeTab('slip')">🧾 Payment Slip</button>
       <button type="button" data-ftab="ledger" onclick="financeTab('ledger')">📒 Fund Ledger</button>
       <button type="button" data-ftab="vouchers" onclick="financeTab('vouchers')">🧾 Search</button>
+      <button type="button" data-ftab="report" onclick="financeTab('report')">📑 Report</button>
       <button type="button" data-ftab="backup" onclick="financeTab('backup')">💾 Excel / Backup</button>
     </div>
     <div class="orderBar" id="finOrderBar">
@@ -123,18 +144,18 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <h3 id="finEntryTitle">Daily Cash / Bank Entry</h3>
       <input type="hidden" id="finEditId">
       <div class="finance-grid">
-        <div class="finance-callout">One entry = one date. Type the <b>Receipt</b> and the <b>Payment</b> together — the side you don't use is saved as <b>0</b>.</div>
+        <div class="finance-callout">One entry = one date. Type the <b>Receipt</b> and the <b>Payment</b> together — the side you don't use is saved as <b>0</b>. 💡 Start typing <b>Particulars</b> or <b>Paid To</b> — matching earlier entries (all funds) are suggested.</div>
         <div class="finance-field"><label>Date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finDate"></div>
         <div class="finance-field"><label>Fund / PB *</label><select id="finFund" onchange="syncFundFields()"></select><div class="finance-note" id="finFundHint"></div></div>
         <div class="finance-field"><label>Voucher / Sl No.</label><input id="finVoucher"></div>
         <div class="finance-field"><label>Payment Slip SL No. <span style="font-weight:400">(blank = next)</span></label><input type="number" min="1" step="1" id="finSlipNo"></div>
         <div class="finance-field finance-span-4"><label>Particulars / Purpose * <span style="font-weight:400">(full details — printed as Purpose on the Payment Slip)</span></label><textarea id="finParticulars" class="finParticularsBox" rows="2" oninput="finAutoGrow(this)"></textarea></div>
-        <div class="finance-field finance-span-2"><label>Paid To <span style="font-weight:400">(needed for the slip)</span></label><input id="finPaidTo"></div>
+        <div class="finance-field finance-span-2"><label>Paid To <span style="font-weight:400">(needed for the slip)</span></label><input id="finPaidTo" autocomplete="off"></div>
         <div class="finance-field"><label>Receipt Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finReceipt" value="0"></div>
         <div class="finance-field"><label>Payment Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finPayment" value="0"></div>
         <div class="finance-field"><label>Quantity</label><input type="number" step="any" id="finQty"></div><div class="finance-field"><label>Rate</label><input type="number" step="any" id="finRate"></div>
         <div class="finance-field"><label>Cheque No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finCheque"></div>
-        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finAccNo"></div>
+        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finAccNo" list="sugAccList" autocomplete="off"><datalist id="sugAccList"></datalist></div>
         <div class="finance-field"><label>Slip paid via</label><select id="finSlipMode" onchange="syncFundFields()"><option value="">Auto (as per Fund)</option><option value="cash">Cash (By Hand)</option><option value="bank">Bank A/c (Cheque)</option></select></div>
         <div class="finance-field finance-span-2"><label>Remarks</label><textarea id="finRemarks"></textarea></div>
       </div>
@@ -165,11 +186,25 @@ body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.log
       <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th class="num">Balance</th><th class="wrap-s">Remarks</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
     </section>
     <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Has Receipt</option><option value="payment">Has Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Fund / PB</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
+    <section id="finPanelReport" style="display:none">
+      <h3>📑 Report — Receipt &amp; Payment (Fund-wise)</h3>
+      <div class="finance-grid">
+        <div class="finance-field finance-span-2"><label>Report type</label><select id="repType" onchange="repGenerate()"><option value="synopsis">Synopsis — fund-wise summary (Receipt side | Payment side)</option><option value="demand">Demand / Detailed statement — entry-wise (Receipt side | Payment side)</option></select></div>
+        <div class="finance-field"><label>Fund / PB</label><select id="repFund" onchange="repGenerate()"></select></div>
+        <div class="finance-field"><label>Up to date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="repTo" oninput="repGenerate()"></div>
+        <div class="finance-field"><label>From date <span style="font-weight:400">(blank = from beginning)</span></label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="repFrom" oninput="repGenerate()"></div>
+        <div class="finance-field"><label>&nbsp;</label><label style="font-weight:400"><input type="checkbox" id="repSkipEmpty" checked style="width:auto" onchange="repGenerate()"> Skip funds with no figures</label></div>
+      </div>
+      <div class="finance-actions"><button onclick="repGenerate()">📑 Generate</button><button onclick="repPrint()" style="background:#0b7a3b">🖨 Print / Save PDF</button><button class="secondary" onclick="repExcel()">📥 Excel</button></div>
+      <div class="finance-status" id="repStatus"></div>
+      <div class="rep-sheet" id="repOut"></div>
+    </section>
     <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available live on other computers using the same login.</div></section>
   </div>
 </div>
 
 <div id="slipPrintRoot"></div>
+<div id="reportPrintRoot"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -403,7 +438,7 @@ async function loadFinanceFromFirebase(){
     );
 }
 
-function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFinanceVouchers(); }
+function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFinanceVouchers(); if(typeof repGenerate==='function' && document.getElementById('finPanelReport')?.style.display==='block') repGenerate(); }
 
 function renderFinanceDashboard(){
   let t = todayISO();
@@ -469,7 +504,7 @@ function renderFinanceVouchers(){
 }
 
 function financeTab(tab){
-  ['dashboard','entry','slip','ledger','vouchers','backup'].forEach(t => {
+  ['dashboard','entry','slip','ledger','vouchers','report','backup'].forEach(t => {
     let p = document.getElementById('finPanel'+t[0].toUpperCase()+t.slice(1));
     if(p) p.style.display = t === tab ? 'block' : 'none';
     let btn = document.querySelector(`[data-ftab="${t}"]`);
@@ -477,6 +512,7 @@ function financeTab(tab){
   });
   if(tab === 'entry') initFinanceSelectors();
   if(tab === 'slip') initSlipTab();
+  if(tab === 'report') initReportTab();
   setTimeout(finGrowAll, 0);
   const ob = document.getElementById('finOrderBar');
   if(ob) ob.style.display = (tab === 'ledger' || tab === 'vouchers') ? 'flex' : 'none';
@@ -931,6 +967,139 @@ function restoreLocalExcelImport(){
   // Excel imports are now stored in Firebase, not only in this browser.
   // Intentionally do not merge localStorage ledger rows into the live data.
   try { localStorage.removeItem('TFHS_EXCEL_IMPORT'); } catch(e){}
+}
+</script>
+<script>
+/* ===== Suggestions from earlier saved entries (all funds, incl. Excel imports) ===== */
+const SUG={src:null,parts:[],payees:[]};
+function sugBuild(){
+ if(SUG.src===financeRows) return; SUG.src=financeRows;
+ const P=new Map(),T=new Map(),A=new Set();
+ financeRows.slice().sort(finCompare).forEach(x=>{
+  const p=String(x.particulars||'').replace(/\s+/g,' ').trim(), t=String(x.paidTo||'').replace(/\s+/g,' ').trim();
+  if(p){const o=P.get(p.toLowerCase());P.set(p.toLowerCase(),{text:p,last:x,count:(o?o.count:0)+1});}
+  if(t){const o=T.get(t.toLowerCase());T.set(t.toLowerCase(),{text:t,last:x,count:(o?o.count:0)+1,acc:x.accNo||(o&&o.acc)||''});}
+  if(x.accNo) A.add(String(x.accNo).trim());
+ });
+ SUG.parts=[...P.values()];SUG.payees=[...T.values()];
+ const dl=document.getElementById('sugAccList'); if(dl) dl.innerHTML=[...A].map(a=>`<option value="${finEsc(a)}">`).join('');
+}
+function sugMatch(list,q,fund){
+ const toks=q.toLowerCase().split(/\s+/).filter(Boolean),out=[];
+ list.forEach(o=>{const lc=o.text.toLowerCase(); if(!toks.every(t=>lc.includes(t))) return;
+  out.push({o,s:(lc.startsWith(toks[0])?30:0)+(o.last.fund===fund?20:0)+Math.min(o.count,10)});});
+ return out.sort((a,b)=>b.s-a.s||finCompare(b.o.last,a.o.last)).slice(0,8).map(z=>z.o);
+}
+function sugSet(id,v){const e=document.getElementById(id); if(e) e.value=v;}
+function sugPick(kind,o){
+ const x=o.last;
+ if(kind==='part'){ sugSet('finParticulars',o.text); finAutoGrow(document.getElementById('finParticulars'));
+  if(!elv('finPaidTo').trim()&&x.paidTo) sugSet('finPaidTo',x.paidTo);
+  if(!finNum(elv('finRate'))&&x.rate) sugSet('finRate',x.rate);
+ } else sugSet('finPaidTo',o.text);
+ const acc=(kind==='payee'&&o.acc)||x.accNo; if(!elv('finAccNo').trim()&&acc) sugSet('finAccNo',acc);
+ if(!elv('finSlipMode')&&x.slipMode) sugSet('finSlipMode',x.slipMode);
+ syncFundFields();
+ const amt=pAmt(x)>0?'Payment '+finMoney(pAmt(x)):'Receipt '+finMoney(rAmt(x));
+ document.getElementById('finEntryStatus').textContent=`Filled from an earlier entry (${fmtDMY(x.date)}, ${amt}). Amount is not copied — please enter it.`;
+}
+function sugAttach(id,kind){
+ const el=document.getElementById(id); if(!el) return;
+ const box=document.createElement('div'); box.className='sug-box'; box.style.display='none'; el.parentElement.appendChild(box);
+ let items=[],act=-1;
+ const hide=()=>{box.style.display='none';items=[];act=-1;};
+ const mark=()=>[...box.querySelectorAll('.sug-item')].forEach((d,i)=>d.classList.toggle('on',i===act));
+ function show(){
+  if(elv('finEditId')){hide();return;}
+  const q=el.value.replace(/\s+/g,' ').trim(); if(q.length<2){hide();return;}
+  sugBuild(); items=sugMatch(kind==='part'?SUG.parts:SUG.payees,q,elv('finFund')); act=-1;
+  if(!items.length){hide();return;}
+  box.innerHTML='<div class="sug-head">From earlier entries — click / ↑↓ + Enter to use · Esc to close</div>'+items.map((o,i)=>{const x=o.last,amt=pAmt(x)>0?'Pay '+finMoney(pAmt(x)):'Rec '+finMoney(rAmt(x));
+   return `<div class="sug-item" data-i="${i}"><div class="st">${finEsc(o.text)}</div><div class="sm">${finEsc(fundInfo(x.fund).label)} · ${finEsc(fmtDMY(x.date))} · ${amt} · used ${o.count}×</div></div>`;}).join('');
+  box.style.display='block';
+ }
+ box.addEventListener('mousedown',e=>{e.preventDefault();const d=e.target.closest('.sug-item'); if(d){sugPick(kind,items[+d.dataset.i]);hide();}});
+ el.addEventListener('input',show);
+ el.addEventListener('blur',()=>setTimeout(hide,120));
+ el.addEventListener('keydown',e=>{
+  if(box.style.display==='none') return;
+  if(e.key==='ArrowDown'){e.preventDefault();act=(act+1)%items.length;mark();}
+  else if(e.key==='ArrowUp'){e.preventDefault();act=(act<=0?items.length:act)-1;mark();}
+  else if(e.key==='Enter'&&act>=0){e.preventDefault();sugPick(kind,items[act]);hide();}
+  else if(e.key==='Escape') hide();
+ });
+}
+sugAttach('finParticulars','part'); sugAttach('finPaidTo','payee');
+
+/* ===== Report: Synopsis / Demand (Receipt side | Payment side, fund-wise, up to date) ===== */
+const f2=n=>(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nc=n=>`<td class="n${n<0?' neg':''}">${f2(n)}</td>`;
+let repHTML='',repData=null;
+function initReportTab(){
+ const s=document.getElementById('repFund');
+ if(s&&!s.options.length){s.add(new Option('All Funds',''));FINANCE_FUNDS.forEach(f=>s.add(new Option(f[1],f[0])));}
+ const t=document.getElementById('repTo'); if(t&&!t.value) t.value=fmtDMY(todayISO());
+ repGenerate();
+}
+function repCompute(){
+ const fr=elv('repFrom').trim(),tr=elv('repTo').trim(),from=fr?dmyToISO(fr):'',to=tr?dmyToISO(tr):todayISO();
+ if((fr&&!from)||(tr&&!to)) return {err:'Enter dates as DD-MM-YYYY.'};
+ if(from&&to<from) return {err:'"Up to" date is before "From" date.'};
+ const fs=elv('repFund'),skip=document.getElementById('repSkipEmpty').checked;
+ const groups=FINANCE_FUNDS.filter(f=>!fs||f[0]===fs).map(f=>{
+  let open=finNum(financeOpeningBalances[f[0]]?.openingBalance),rec=0,pay=0;const rows=[];
+  financeRows.filter(x=>x.fund===f[0]).sort(finCompare).forEach(x=>{const d=x.date||'';
+   if(from&&d<from) open+=rAmt(x)-pAmt(x); else if(d<=to){rec+=rAmt(x);pay+=pAmt(x);rows.push(x);}});
+  return {f,open,rec,pay,close:open+rec-pay,rows};
+ }).filter(g=>fs||!skip||g.open||g.rec||g.pay);
+ return {from,to,fs,groups};
+}
+function repHead(D,type){
+ const per=D.from?`Period: ${fmtDMY(D.from)} to ${fmtDMY(D.to)}`:`Up to date: ${fmtDMY(D.to)} (from the beginning, with opening balance)`;
+ return `<div class="rep-title"><div class="t1">Taldangra Fulmati High School (H.S.)</div><div class="t2">Receipt &amp; Payment — ${type==='demand'?'Demand / Detailed Statement':'Synopsis'} (Fund-wise)</div><div class="t3">${per} · ${D.fs?finEsc(fundInfo(D.fs).label):'All Funds'} · Amount in ₹</div></div>`;
+}
+function repSynopsis(D){
+ const T={o:0,r:0,p:0,c:0};
+ const rows=D.groups.map((g,i)=>{T.o+=g.open;T.r+=g.rec;T.p+=g.pay;T.c+=g.close;
+  return `<tr><td>${i+1}</td><td>${finEsc(g.f[1])}</td>${nc(g.open)}${nc(g.rec)}${nc(g.open+g.rec)}${nc(g.pay)}${nc(g.close)}${nc(g.pay+g.close)}</tr>`;}).join('');
+ return `<table class="rep-tbl"><thead><tr><th rowspan="2">Sl</th><th rowspan="2">Fund / PB</th><th colspan="3">RECEIPT SIDE</th><th colspan="3">PAYMENT SIDE</th></tr><tr><th>Opening Balance</th><th>Receipts</th><th>Total</th><th>Payments</th><th>Closing Balance</th><th>Total</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No data.</td></tr>'}<tr class="tot"><td></td><td>GRAND TOTAL</td>${nc(T.o)}${nc(T.r)}${nc(T.o+T.r)}${nc(T.p)}${nc(T.c)}${nc(T.p+T.c)}</tr></tbody></table>`;
+}
+function repDemand(D){
+ const cg='<col style="width:8%"><col style="width:6%"><col style="width:28%"><col style="width:8%">';
+ const mk=x=>({d:fmtDMY(x.date),v:x.voucher||'',t:x.particulars||'',w:x.paidTo||''});
+ const side=o=>o?`<td>${finEsc(o.d)}</td><td>${finEsc(o.v)}</td><td>${o.b?'<b>'+finEsc(o.t)+'</b>':finEsc(o.t)}${o.w?` <small>→ ${finEsc(o.w)}</small>`:''}</td>${nc(o.a)}`:'<td></td><td></td><td></td><td></td>';
+ return D.groups.map(g=>{
+  const L=[{d:'',v:'',t:D.from?'To Opening Balance (b/f)':'To Opening Balance',a:g.open,b:1}].concat(g.rows.filter(x=>rAmt(x)>0).map(x=>({...mk(x),a:rAmt(x)})));
+  const R=g.rows.filter(x=>pAmt(x)>0).map(x=>({...mk(x),a:pAmt(x)})).concat([{d:'',v:'',t:'By Closing Balance (c/f)',a:g.close,b:1}]);
+  let h='';for(let i=0;i<Math.max(L.length,R.length);i++) h+=`<tr>${side(L[i])}${side(R[i])}</tr>`;
+  return `<div class="rep-fund">${finEsc(g.f[1])}</div><table class="rep-tbl fixed"><colgroup>${cg}${cg}</colgroup><thead><tr><th colspan="4">RECEIPT SIDE</th><th colspan="4">PAYMENT SIDE</th></tr><tr><th>Date</th><th>Vch</th><th>Particulars</th><th>Amount</th><th>Date</th><th>Vch</th><th>Particulars</th><th>Amount</th></tr></thead><tbody>${h}<tr class="tot"><td colspan="3">Total</td>${nc(g.open+g.rec)}<td colspan="3">Total</td>${nc(g.pay+g.close)}</tr></tbody></table>`;
+ }).join('')||'<p>No data.</p>';
+}
+function repGenerate(){
+ const out=document.getElementById('repOut'); if(!out) return;
+ const D=repCompute(),st=document.getElementById('repStatus');
+ if(D.err){st.textContent=D.err;return;}
+ repData=D;const type=elv('repType');
+ repHTML=repHead(D,type)+(type==='demand'?repDemand(D):repSynopsis(D))+'<div class="rep-sign"><span>Prepared by (Clerk / Accountant)</span><span>Head of the Institution</span></div>';
+ out.innerHTML=repHTML; st.textContent=`${D.groups.length} fund(s) · generated ${fmtDMY(todayISO())} · live from cloud data`;
+}
+function repPrint(){
+ if(!repHTML) return alert('Generate the report first.');
+ document.getElementById('reportPrintRoot').innerHTML=repHTML;
+ const st=document.createElement('style');st.id='repPageStyle';st.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';document.head.appendChild(st);
+ document.body.classList.add('print-report');
+ const done=()=>{document.body.classList.remove('print-report');st.remove();window.removeEventListener('afterprint',done);};
+ window.addEventListener('afterprint',done); setTimeout(()=>window.print(),60);
+}
+function repExcel(){
+ if(!repData) return alert('Generate the report first.');
+ const D=repData,S=[['Fund / PB','Opening Balance','Receipts','Payments','Closing Balance']],E=[['Fund / PB','Date','Voucher','Particulars','Paid To','Receipt','Payment']];
+ D.groups.forEach(g=>{S.push([g.f[1],g.open,g.rec,g.pay,g.close]);
+  E.push([g.f[1],'','','Opening Balance','',g.open,'']);
+  g.rows.forEach(x=>E.push([g.f[1],fmtDMY(x.date),x.voucher||'',x.particulars||'',x.paidTo||'',rAmt(x),pAmt(x)]));
+  E.push([g.f[1],'','','Closing Balance','','',g.close]);});
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(S),'Synopsis');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(E),'Statement');
+ XLSX.writeFile(wb,`TFHS_Report_${D.to}.xlsx`);
 }
 </script>
 </body>
