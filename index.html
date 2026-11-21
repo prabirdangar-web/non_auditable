@@ -1,226 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TFHS School Cash Book</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> TFHS Cash Book, Voucher &amp; Pass Book System [AUDITABLE]</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-.finance-module{margin:12px auto;max-width:1200px;background:#fff;border:1px solid #cfd8e3;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px;display:none}
-.finance-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:8px;background:#eef4fb;border-radius:6px}
-.finance-tabs button{border:1px solid #9fb5cc;background:#fff;border-radius:5px;padding:7px 11px;cursor:pointer;font-weight:600;color:#173b5e}
-.finance-tabs button.active{background:#173b5e;color:#fff}
-.finance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
-.finance-field{display:flex;flex-direction:column;gap:3px}.finance-field label{font-size:12px;font-weight:700;color:#30465b}.finance-field input,.finance-field select,.finance-field textarea{padding:7px;border:1px solid #b9c5d1;border-radius:4px;font-size:13px;box-sizing:border-box;width:100%}.finance-field textarea{min-height:55px;resize:vertical}.finance-span-2{grid-column:span 2}.finance-span-4{grid-column:span 4}
-.finance-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.finance-actions button{padding:7px 12px;border:0;border-radius:4px;cursor:pointer;background:#173b5e;color:#fff}.finance-actions button.secondary{background:#64748b}.finance-actions button.danger{background:#a52a2a}
-.cashbook-top-btn{background:#0b7a3b!important;color:#fff!important;font-weight:800!important;border:1px solid #075c2d!important}.finance-close{float:right;background:#b42318!important;color:#fff!important;border:0;border-radius:4px;padding:6px 12px;cursor:pointer;font-weight:700}.finance-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #173b5e;padding-bottom:8px;margin-bottom:10px}.finance-header h2{margin:0;color:#173b5e;font-size:20px}
-.finance-status{margin:8px 0;padding:7px;border-radius:4px;background:#f1f5f9;min-height:16px;font-size:12px}.finance-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.finance-card{padding:10px;border:1px solid #d4dde7;border-radius:6px;background:#f8fafc}.finance-card b{display:block;font-size:18px;margin-top:3px}.finance-table-wrap{overflow:auto;max-height:430px;border:1px solid #d6dee8;border-radius:5px}.finance-table{width:100%;border-collapse:collapse;font-size:12px}.finance-table th,.finance-table td{padding:6px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.finance-table th{position:sticky;top:0;background:#eaf1f8;z-index:1}.finance-note{font-size:11px;color:#5b6b7a;margin-top:5px}
-@media(max-width:800px){.finance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-span-4{grid-column:span 2}.finance-cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px){.finance-grid{grid-template-columns:1fr}.finance-span-2,.finance-span-4{grid-column:span 1}.finance-cards{grid-template-columns:1fr}.finance-tabs{overflow:auto;flex-wrap:nowrap}}
+  :root{
+    --navy:#0b2545; --navy2:#13315c; --gold:#b8860b; --paper:#fdfcf8;
+    --ink:#1b1b1b; --line:#c9c2ae; --green:#1e6b3c; --red:#a3231f; --grey:#6b6b6b;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Georgia","Times New Roman",serif; background:#e9e6dd; margin:0; color:var(--ink);}
+  header.top{background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#f4efe0; padding:14px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  header.top h1{font-size:1.15rem; margin:0; letter-spacing:.3px;}
+  header.top .sub{font-size:.75rem; opacity:.85; font-family:Arial,sans-serif;}
+  header.top button{background:var(--gold); border:none; color:#241a00; padding:7px 14px; border-radius:4px; cursor:pointer; font-family:Arial,sans-serif; font-size:.8rem; font-weight:bold;}
+  #loginScreen{max-width:380px; margin:80px auto; background:var(--paper); padding:30px; border:1px solid var(--line); border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,.15);}
+  #loginScreen h2{margin-top:0; color:var(--navy); font-size:1.1rem; text-align:center;}
+  #loginScreen input{width:100%; padding:9px; margin:7px 0; border:1px solid var(--line); border-radius:4px; font-family:Arial,sans-serif;}
+  #loginScreen button{width:100%; padding:10px; background:var(--navy); color:#fff; border:none; border-radius:4px; margin-top:8px; cursor:pointer; font-family:Arial,sans-serif; font-weight:bold;}
+  #loginMsg{font-size:.8rem; color:var(--red); font-family:Arial,sans-serif; min-height:16px; text-align:center;}
+  #app{display:none; max-width:1200px; margin:0 auto; padding:14px;}
+  nav.tabs{display:flex; gap:6px; margin:14px 0 10px; flex-wrap:wrap; font-family:Arial,sans-serif;}
+  nav.tabs button{background:#fff; border:1px solid var(--line); padding:8px 16px; border-radius:5px 5px 0 0; cursor:pointer; font-size:.85rem; color:var(--navy2);}
+  nav.tabs button.active{background:var(--navy); color:#fff; border-color:var(--navy); font-weight:bold;}
+  .panel{display:none; background:var(--paper); border:1px solid var(--line); border-radius:0 6px 6px 6px; padding:18px;}
+  .panel.active{display:block;}
+  .subtabs{display:flex; gap:5px; margin-bottom:14px; flex-wrap:wrap; font-family:Arial,sans-serif;}
+  .subtabs button{padding:6px 12px; border:1px solid var(--navy2); background:#fff; color:var(--navy2); border-radius:14px; font-size:.78rem; cursor:pointer;}
+  .subtabs button.active{background:var(--navy2); color:#fff;}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-family:Arial,sans-serif; align-items:center;}
+  .toolbar input, .toolbar select{padding:7px; border:1px solid var(--line); border-radius:4px; font-family:Arial,sans-serif; font-size:.82rem;}
+  .toolbar button{padding:7px 14px; border:none; background:var(--green); color:#fff; border-radius:4px; cursor:pointer; font-size:.82rem;}
+  .toolbar button.secondary{background:var(--navy2);}
+  .toolbar button.danger{background:var(--red);}
+  .searchBar{background:#f2f0e6; border:1px solid var(--line); border-radius:6px; padding:8px 10px; align-items:center;}
+  .balBox{margin-left:auto; font-weight:bold; font-family:Arial,sans-serif; font-size:.9rem; background:#fff; padding:6px 14px; border-radius:5px; border:1px solid var(--line);}
+  table{width:100%; border-collapse:collapse; font-size:.82rem; font-family:Arial,sans-serif;}
+  th,td{border:1px solid var(--line); padding:6px 8px; text-align:left;}
+  th{background:var(--navy); color:#fff; font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.4px;}
+  tr:nth-child(even){background:#f6f3e9;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .recv{color:var(--green);} .pay{color:var(--red);}
+  .rowActions button{border:none; background:none; cursor:pointer; font-size:.85rem; margin:0 3px;}
+  .tableWrap{max-height:520px; overflow:auto; border:1px solid var(--line);}
+  .tableWrap table thead th{position:sticky; top:0;}
+  .voucherCard{max-width:640px; margin:10px auto; border:2px solid var(--navy); padding:20px; background:#fff; font-family:Arial,sans-serif;}
+  .voucherCard h2{text-align:center; color:var(--navy); font-size:1rem; margin:0 0 2px;}
+  .voucherCard .addr{text-align:center; font-size:.72rem; color:var(--grey); margin-bottom:10px;}
+  .voucherCard table{margin-top:10px;}
+  .setupBox{background:#fff8e6; border:1px solid var(--gold); border-radius:6px; padding:14px; margin-bottom:14px; font-family:Arial,sans-serif; font-size:.83rem;}
+  .badge{display:inline-block; padding:2px 8px; border-radius:10px; font-size:.7rem; font-family:Arial,sans-serif;}
+  .badge.ok{background:#1e8f4e; color:#fff; font-weight:bold;}
+  .badge.warn{background:#e08a00; color:#fff; font-weight:bold;}
+  footer.note{text-align:center; font-size:.72rem; color:var(--grey); font-family:Arial,sans-serif; padding:20px 0;}
 
-body{margin:0;background:#f2f1ed;font-family:Arial,sans-serif;color:#173b5e}.login-overlay{position:fixed;inset:0;background:#0b2240;display:flex;align-items:center;justify-content:center;z-index:9999}.login-box{background:#fff;padding:28px;border-radius:8px;width:320px;max-width:90vw}.login-box input{width:100%;padding:9px;margin:7px 0;box-sizing:border-box}.login-box button{width:100%;padding:10px;background:#0b2240;color:#fff;border:0;border-radius:4px}.login-error{color:#b00020;font-size:12px;margin-top:7px}
+  .orderBar{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 10px; font-family:Arial,sans-serif; font-size:.82rem; background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 12px;}
+  .orderBar b{color:var(--navy);}
+  .orderBar button{padding:6px 14px; border:1px solid var(--navy2); background:#fff; color:var(--navy2); border-radius:14px; font-size:.8rem; cursor:pointer;}
+  .orderBar button.active{background:var(--navy2); color:#fff; font-weight:bold;}
+  input.dmy{width:120px;}
+  .deleteSecurityTop{background:#fff3cd;border:3px solid var(--red);border-radius:8px;padding:12px 14px;margin:10px 0;font-family:Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+  .deleteSecurityTop .title{font-size:1rem;font-weight:800;color:var(--red);margin-bottom:7px;}
+  .deleteSecurityTop input{padding:10px 12px;border:2px solid var(--red);border-radius:5px;font-size:.95rem;min-width:280px;font-family:Arial,sans-serif;}
+  .deleteSecurityTop button{padding:10px 16px;border:0;border-radius:5px;background:var(--red);color:#fff;font-weight:bold;cursor:pointer;margin-left:7px;}
+  .deleteSecurityTop .status{font-size:.82rem;font-weight:bold;margin-left:8px;}
+  @media(max-width:650px){.deleteSecurityTop input{min-width:100%;margin:6px 0}.deleteSecurityTop button{margin:4px 0;width:100%}.deleteSecurityTop .status{display:block;margin:7px 0 0}}
+  @media print{
+    header.top, nav.tabs, .toolbar, .subtabs, #app > nav, .noprint{display:none !important;}
+    body{background:#fff;}
+    #app{max-width:100%; padding:0; display:block !important;}
+    .panel{display:none !important; border:none;}
+    .panel.printing{display:block !important;}
+    .tableWrap{max-height:none; overflow:visible; border:none;}
+  }
 
-.orderBar{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;padding:8px 10px;background:#f8fafc;border:1px solid #d4dde7;border-radius:6px;font-size:13px}
-.orderBar b{color:#173b5e}.orderBar button{padding:6px 13px;border:1px solid #173b5e;background:#fff;color:#173b5e;border-radius:14px;font-size:12px;cursor:pointer}.orderBar button.active{background:#173b5e;color:#fff;font-weight:700}
-.deleteSecurityTop{margin:10px 0;padding:12px;border:2px solid #b42318;border-radius:7px;background:#fff3cd;color:#7a1f1f;font-weight:700}
-.deleteSecurityTop input{padding:9px;border:2px solid #b42318;border-radius:5px;width:280px;max-width:100%;box-sizing:border-box}
-.deleteSecurityTop button{padding:9px 12px;margin-left:6px;border:0;border-radius:5px;background:#b42318;color:#fff;font-weight:700;cursor:pointer}
-/* ===== Receipt + Payment on one entry / Payment slip ===== */
-.amt-nil{color:#9aa8b6}.finance-table td.num,.finance-table th.num{text-align:right}
-.slip-preview{margin-top:12px;overflow:auto;background:#e9edf2;padding:10px;border-radius:6px;border:1px solid #d4dde7}.slip-preview:empty{display:none}
-.finance-field input:disabled{background:#eef1f4;color:#8a97a5}
-.finance-field input.zf{text-align:right;font-weight:700}
-.finance-callout{grid-column:1/-1;margin:0 0 2px;padding:7px 10px;background:#eef7ee;border:1px solid #b9dcbc;border-radius:5px;font-size:12px;color:#1b4d20}
-.slipPage{width:194mm;margin:0 auto 8mm;display:flex;flex-direction:column;gap:5mm}
-.pslip{box-sizing:border-box;width:194mm;height:133mm;border:1.2mm double #000;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;overflow:hidden}
-.pslip .p-top{height:9mm;border-bottom:.35mm solid #000;display:flex;flex-shrink:0}
-.pslip .p-sl{background:#ff0!important;color:#f00;font-size:18pt;line-height:9mm;min-width:26mm;padding:0 8mm;text-align:center;border-right:.35mm solid #000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pslip .p-head{flex-shrink:0;text-align:center;border-bottom:.35mm solid #000;padding:1mm 0 1.3mm;font-family:'Lucida Console','Courier New',monospace;font-weight:700}
-.pslip .p-head .t1{font-size:15pt}.pslip .p-head .t2{font-size:10pt;margin-top:.8mm}
-.pslip .p-upper{flex:1;display:flex;flex-direction:column;min-height:0}
-.pslip .p-payto{font-family:'Aptos Display',Calibri,Arial,sans-serif;font-size:16pt;padding:1.2mm 2mm .6mm}
-.pslip .p-row{display:flex;align-items:center;padding:0 2mm;min-height:8mm}
-.pslip .p-lab{width:31mm;flex-shrink:0;font-size:8pt}
-.pslip .p-val{width:47mm;flex-shrink:0;font-family:Calibri,Arial,sans-serif}
-.pslip .p-val.v1{font-size:14pt}.pslip .p-val.v2{font-size:11pt;font-weight:700}.pslip .p-val.v2 small{font-size:7.5pt;font-weight:400;margin-left:1mm}
-.pslip .p-r1{flex:1;display:flex;align-items:baseline;gap:2mm}.pslip .p-r1 .dt{font-size:9pt;font-weight:700;font-family:'Footlight MT Light',Georgia,serif}.pslip .p-r1 .fy{font-size:14pt;font-weight:700;font-family:'Footlight MT Light',Georgia,serif;margin-left:1mm}
-.pslip .p-bank{flex:1;font-family:'Arial Narrow',Arial,sans-serif;font-size:8pt;font-weight:700}
-.pslip .p-amt{display:flex;justify-content:space-between;width:66mm;font-family:'Lucida Calligraphy','Lucida Handwriting','Brush Script MT',cursive;font-weight:700;font-size:16pt;padding-left:3mm;box-sizing:border-box}
-.pslip .p-words{flex:1;font-family:'Lucida Bright','Lucida Fax','Palatino Linotype',Georgia,serif;font-style:italic;font-weight:700;font-size:13pt;line-height:1.1;padding:1mm 0}
-.pslip .p-purpose{font-family:'Arial Narrow',Arial,sans-serif;font-size:14pt;padding:0 2mm;line-height:1.15}
-.pslip .p-remarks{font-family:'Arial Narrow',Arial,sans-serif;font-size:11pt;padding:.6mm 2mm 0;line-height:1.15;overflow-wrap:anywhere;word-break:break-word}
-.pslip .p-sign{margin-top:auto;display:flex;justify-content:space-between;padding:0 14mm 5mm 18mm;font-size:9pt;font-weight:700}
-.pslip .p-lower{border-top:.35mm solid #000;flex-shrink:0}
-.pslip .p-recv{font-size:11pt;text-decoration:underline;padding:1.3mm 2mm 0}
-.pslip .p-foot{display:flex;align-items:flex-end;height:20mm;padding:0 0 2mm 2mm}
-.pslip .p-foot .d{width:38mm;text-align:center;font-size:9pt}.pslip .p-foot .f{width:22mm;text-align:center;font-size:9pt}
-.pslip .p-foot .who{flex:1;display:flex;flex-direction:column}.pslip .p-foot .box{height:7mm;border:.3mm solid #000;border-right:none;margin-bottom:2mm}
-.pslip .p-foot .nm{text-align:center;font-family:'Ink Free','Segoe Print',cursive;font-weight:700;font-size:14pt}
-#slipPrintRoot{display:none}
-@media print{
-  @page{size:A4 portrait;margin:6mm}
-  body.print-slips{background:#fff}
-  body.print-slips #appRoot,body.print-slips #loginOverlay{display:none!important}
-  body.print-slips #slipPrintRoot{display:block}
-  body.print-slips .slipPage{margin:0;break-after:page;page-break-after:always}
-  body.print-slips .slipPage:last-child{break-after:auto;page-break-after:auto}
-}
-
-/* ===== Full-text wrap for Particulars / Purpose (on-screen viewing) ===== */
-.finance-table td{vertical-align:top}
-.finance-table td.wrap,.finance-table th.wrap{white-space:normal;word-break:break-word;overflow-wrap:anywhere;min-width:260px;line-height:1.4}
-.finance-table td.wrap-s,.finance-table th.wrap-s{white-space:normal;word-break:break-word;overflow-wrap:anywhere;min-width:150px;line-height:1.4}
-.finance-table td.wrap small{display:block;margin-top:2px}
-.finance-table textarea.sp-purpose,.finance-table textarea.sp-remarks,.finance-field textarea.finParticularsBox{width:100%;min-width:260px;box-sizing:border-box;padding:6px;border:1px solid #b9c5d1;border-radius:4px;font:inherit;font-size:12px;line-height:1.4;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;field-sizing:content;min-height:38px}
-.finance-field textarea.finParticularsBox{font-size:13px;min-height:55px}
-.pslip .p-purpose{overflow-wrap:anywhere;word-break:break-word}
-
-/* ===== Suggestions + Report ===== */
-.finance-field{position:relative}
-.sug-box{position:absolute;left:0;right:0;top:100%;z-index:50;background:#fff;border:1px solid #9fb5cc;border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:300px;overflow:auto;margin-top:2px}
-.sug-head{padding:4px 8px;font-size:11px;color:#5b6b7a;background:#eef4fb;border-bottom:1px solid #d4dde7}
-.sug-item{padding:6px 8px;cursor:pointer;border-bottom:1px solid #eef2f6;font-size:13px}.sug-item.on,.sug-item:hover{background:#dbeafe}
-.sug-item .st{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.sug-item .sm{font-size:11px;color:#5b6b7a;margin-top:2px}
-.rep-sheet{background:#fff;border:1px solid #d4dde7;padding:12px;overflow:auto;margin-top:10px;color:#000}
-.rep-title{text-align:center;font-weight:700}.rep-title .t1{font-size:17px}.rep-title .t2{font-size:14px;margin-top:2px}.rep-title .t3{font-size:12px;margin:3px 0 10px;font-weight:400}
-.rep-tbl{width:100%;border-collapse:collapse;font-size:12px;color:#000}.rep-tbl.fixed{table-layout:fixed}
-.rep-tbl th,.rep-tbl td{border:1px solid #000;padding:3px 5px;vertical-align:top;overflow-wrap:anywhere}.rep-tbl th{background:#eaf1f8;text-align:center}
-.rep-tbl td.n{text-align:right;white-space:nowrap}.rep-tbl tr.tot td{font-weight:700;background:#f1f5f9}.rep-tbl .neg{color:#b00020}
-.rep-fund{font-weight:700;margin:14px 0 4px;font-size:13px}.rep-sign{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
-#reportPrintRoot{display:none}
-@media print{
-  body.print-report{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body.print-report #appRoot,body.print-report #loginOverlay{display:none!important}
-  body.print-report #reportPrintRoot{display:block}
-  body.print-report .rep-tbl tr{break-inside:avoid}body.print-report .rep-fund{break-after:avoid}
-}
+  /* ===== Suggestions + Report ===== */
+  .sug-box{position:fixed;z-index:9999;background:#fff;border:1px solid var(--navy2);border-radius:5px;box-shadow:0 6px 18px rgba(0,0,0,.25);max-height:300px;overflow:auto;font-family:Arial,sans-serif}
+  .sug-head{padding:4px 8px;font-size:.68rem;color:var(--grey);background:#eef1f7;border-bottom:1px solid var(--line)}
+  .sug-item{padding:6px 8px;cursor:pointer;border-bottom:1px solid #eee;font-size:.82rem}.sug-item.on,.sug-item:hover{background:#dbe7fb}
+  .sug-item .st{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.sug-item .sm{font-size:.68rem;color:var(--grey);margin-top:2px}
+  .rep-sheet{background:#fff;border:1px solid var(--line);padding:12px;overflow:auto;margin-top:10px;color:#000}
+  .rep-title{text-align:center;font-weight:700;font-family:Arial,sans-serif}.rep-title .t1{font-size:1.05rem}.rep-title .t2{font-size:.9rem;margin-top:2px}.rep-title .t3{font-size:.75rem;margin:3px 0 10px;font-weight:400}
+  .rep-tbl{width:100%;border-collapse:collapse;font-size:.75rem;color:#000;font-family:Arial,sans-serif}.rep-tbl.fixed{table-layout:fixed}
+  .rep-tbl th,.rep-tbl td{border:1px solid #000;padding:3px 5px;vertical-align:top;overflow-wrap:anywhere;text-transform:none;letter-spacing:0}
+  .rep-tbl th{background:#e3e9f3;color:#000;text-align:center;position:static}.rep-tbl tr:nth-child(even){background:none}
+  .rep-tbl td.n{text-align:right;white-space:nowrap}.rep-tbl tr.tot td{font-weight:700;background:#f1f1f1}.rep-tbl tr.sub td{font-weight:700;background:#fff7dc}.rep-tbl .neg{color:#b00020}
+  .rep-fund{font-weight:700;margin:14px 0 4px;font-size:.85rem;font-family:Arial,sans-serif}.rep-note{font-size:.7rem;margin-top:6px;font-family:Arial,sans-serif}
+  .rep-sign{display:flex;justify-content:space-between;margin-top:30px;font-size:.78rem;font-family:Arial,sans-serif}
+  .printOnly{display:none}
+  @media print{.printOnly{display:inline}}
+  #reportPrintRoot{display:none}
+  @media print{
+    body.print-report{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body.print-report #app,body.print-report header.top,body.print-report #loginScreen,body.print-report footer{display:none!important}
+    body.print-report #reportPrintRoot{display:block}
+    body.print-report .rep-tbl tr{break-inside:avoid}body.print-report .rep-fund{break-after:avoid}
+  }
 </style>
 </head>
 <body>
-<div id="loginOverlay" class="login-overlay">
-  <div class="login-box">
-    <h2>TFHS Cash Book</h2>
-    <p>Sign in to access the school cash book.</p>
-    <input id="loginEmail" type="email" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
-    <button onclick="doLogin()">Sign In</button>
-    <div id="loginError" class="login-error"></div>
+
+<header class="top">
+  <div>
+    <h1>TALDANGRA FULMATI HIGH SCHOOL [H.S.]</h1>
+    <div class="sub">Auditable Cash Book &middot; Voucher Register &middot; Pass Book (Including VOC &amp; MDM) &mdash; UDISE 19132104401</div>
   </div>
+  <div id="userBox" style="display:none;">
+    <span class="sub" id="userEmail"></span>
+    <button onclick="exportAll()" title="Download a JSON backup of everything">⬇ Backup</button>
+    <button onclick="logout()">Log Out</button>
+  </div>
+</header>
+
+<div id="loginScreen">
+  <h2>Admin Login</h2>
+  <input type="email" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPass" placeholder="Password">
+  <button onclick="login()">Log In</button>
+  <div id="loginMsg"></div>
 </div>
 
-<div id="appRoot" style="display:none">
-  <div class="action-bar" style="background:#0b2240;color:#fff;padding:7px 12px"><b>Taldangra Fulmati High School (H.S.) — Daily Cash Book</b></div>
-  <div class="finance-module" id="financeModule" style="display:block">
-    <div class="finance-header"><h2>💰 NON AUDITABLE SCHOOL CASH BOOK / FUND MANAGEMENT</h2><button type="button" class="finance-close" onclick="doLogout()">Sign Out</button></div>
-    <div class="deleteSecurityTop noprint">
-      🔐 EDIT / DELETE PASSWORD — REQUIRED FOR ALL EDITS AND DELETIONS
-      <div style="font-size:12px;margin:5px 0 8px;font-weight:400">The shared password is required before editing or deleting any Cash Book entry, including old/historical and newly added records.</div>
-      <input type="password" id="topDeletePasswordInput" autocomplete="new-password" placeholder="Enter Edit / Delete Password">
-      <button type="button" onclick="saveTopDeletePassword()">Set / Change Password</button>
-      <button type="button" onclick="clearTopDeletePassword()" style="background:#173b5e">Clear</button>
-      <span id="topDeletePasswordStatus" style="font-size:12px;margin-left:8px">Loading…</span>
-    </div>
-    <div class="finance-tabs">
-      <button type="button" class="active" data-ftab="dashboard" onclick="financeTab('dashboard')">📊 Dashboard</button>
-      <button type="button" data-ftab="entry" onclick="financeTab('entry')">➕ Add / Edit Entry</button>
-      <button type="button" data-ftab="slip" onclick="financeTab('slip')">🧾 Payment Slip</button>
-      <button type="button" data-ftab="ledger" onclick="financeTab('ledger')">📒 Fund Ledger</button>
-      <button type="button" data-ftab="vouchers" onclick="financeTab('vouchers')">🧾 Search</button>
-      <button type="button" data-ftab="report" onclick="financeTab('report')">📑 Report</button>
-      <button type="button" data-ftab="backup" onclick="financeTab('backup')">💾 Excel / Backup</button>
-    </div>
-    <div class="orderBar" id="finOrderBar">
-      <b>📅 View all records:</b>
-      <button type="button" id="ord_old" onclick="setViewOrder('old')">⬇ Old → New</button>
-      <button type="button" id="ord_new" onclick="setViewOrder('new')">⬆ New → Old</button>
-      <span style="color:#5b6b7a;font-size:11px">Running balance always follows true date order.</span>
-    </div>
-    <section id="finPanelDashboard">
-      <h3>School Cash & Fund Dashboard</h3>
-      <div class="finance-cards"><div class="finance-card">Today's Receipt<b id="finTodayReceipt">₹0.00</b></div><div class="finance-card">Today's Payment<b id="finTodayPayment">₹0.00</b></div><div class="finance-card">Net Today<b id="finTodayNet">₹0.00</b></div><div class="finance-card">Total Entries<b id="finEntryCount">0</b></div></div>
-      <div class="finance-actions"><button onclick="financeTab('entry')">➕ New Daily Entry</button><button onclick="exportFinanceCSV()">Export CSV</button></div>
-      <div class="finance-status" id="finDashStatus">Connecting to Firebase live sync…</div>
-      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Fund</th><th>Receipt</th><th>Payment</th><th>Balance</th><th>Entries</th></tr></thead><tbody id="finFundSummary"></tbody></table></div>
-    </section>
-    <section id="finPanelEntry" style="display:none">
-      <h3 id="finEntryTitle">Daily Cash / Bank Entry</h3>
-      <input type="hidden" id="finEditId">
-      <div class="finance-grid">
-        <div class="finance-callout">One entry = one date. Type the <b>Receipt</b> and the <b>Payment</b> together — the side you don't use is saved as <b>0</b>. 💡 Start typing <b>Particulars</b> or <b>Paid To</b> — matching earlier entries (all funds) are suggested.</div>
-        <div class="finance-field"><label>Date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finDate"></div>
-        <div class="finance-field"><label>Fund / PB *</label><select id="finFund" onchange="syncFundFields()"></select><div class="finance-note" id="finFundHint"></div></div>
-        <div class="finance-field"><label>Voucher / Sl No.</label><input id="finVoucher"></div>
-        <div class="finance-field"><label>Payment Slip SL No. <span style="font-weight:400">(blank = next)</span></label><input type="number" min="1" step="1" id="finSlipNo"></div>
-        <div class="finance-field finance-span-4"><label>Particulars / Purpose * <span style="font-weight:400">(full details — printed as Purpose on the Payment Slip)</span></label><textarea id="finParticulars" class="finParticularsBox" rows="2" oninput="finAutoGrow(this)"></textarea></div>
-        <div class="finance-field finance-span-2"><label>Paid To <span style="font-weight:400">(needed for the slip)</span></label><input id="finPaidTo" autocomplete="off"></div>
-        <div class="finance-field"><label>Receipt Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finReceipt" value="0"></div>
-        <div class="finance-field"><label>Payment Amount ₹</label><input type="number" step="0.01" min="0" class="zf" id="finPayment" value="0"></div>
-        <div class="finance-field"><label>Quantity</label><input type="number" step="any" id="finQty"></div><div class="finance-field"><label>Rate</label><input type="number" step="any" id="finRate"></div>
-        <div class="finance-field"><label>Cheque No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finCheque"></div>
-        <div class="finance-field"><label>A/c No. <span style="font-weight:400">(if paid by bank)</span></label><input id="finAccNo" list="sugAccList" autocomplete="off"><datalist id="sugAccList"></datalist></div>
-        <div class="finance-field"><label>Slip paid via</label><select id="finSlipMode" onchange="syncFundFields()"><option value="">Auto (as per Fund)</option><option value="cash">Cash (By Hand)</option><option value="bank">Bank A/c (Cheque)</option></select></div>
-        <div class="finance-field finance-span-2"><label>Remarks</label><textarea id="finRemarks"></textarea></div>
-      </div>
-      <div class="finance-actions"><button onclick="financeCalculateAmount()">Calculate Qty × Rate</button><select id="finCalcTarget" style="padding:6px"><option value="payment">→ into Payment</option><option value="receipt">→ into Receipt</option></select><button onclick="saveFinanceEntry(false)" id="finSaveBtn">Save Entry</button><button onclick="saveFinanceEntry(true)" id="finSaveSlipBtn" style="background:#0b7a3b">Save &amp; Generate Payment Slip</button><button class="secondary" onclick="clearFinanceEntry()">Clear / New</button></div>
-      <div class="finance-status" id="finEntryStatus"></div>
-    </section>
-    <section id="finPanelSlip" style="display:none">
-      <h3>🧾 Payment Slip (Declaration)</h3>
-      <div class="finance-grid">
-        <div class="finance-field"><label>Fund / PB</label><select id="slipFund" onchange="slipFilterChanged()"></select></div>
-        <div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipFrom" oninput="slipFilterChanged()"></div>
-        <div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="slipTo" oninput="slipFilterChanged()"></div>
-        <div class="finance-field"><label>Start SL No. *</label><input type="number" min="1" step="1" id="slipStartSl" oninput="slipStartTouched=true"></div>
-        <div class="finance-field"><label>Default A/c No. (bank slips)</label><input id="slipAcc"></div>
-        <div class="finance-field"><label>Left signatory</label><input id="slipLeftLabel" value="Hostel in Charge"></div>
-        <div class="finance-field finance-span-2"><label>Bank line printed on slip</label><input id="slipBankLine" value="Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA"></div>
-      </div>
-      <div class="finance-note" style="margin:6px 0">Shows the <b>payment</b> entries for the chosen Fund/PB and dates. Tick the ones to print. Entries that already have an SL keep it (reprint); new ones are numbered from <b>Start SL No.</b> and the SL is saved with the entry.</div>
-      <div class="finance-table-wrap" style="max-height:300px"><table class="finance-table"><thead><tr><th></th><th>Date</th><th>Fund / PB</th><th>Paid To *</th><th class="wrap">Purpose (full Particulars)</th><th class="wrap">Remarks</th><th class="num">Amount</th><th>Paid via</th><th>Cheque No.</th><th>A/c No.</th><th>SL</th></tr></thead><tbody id="slipBody"></tbody></table></div>
-      <div class="finance-actions"><button onclick="generateSlips()">🧾 Generate Slips</button><button id="slipPrintBtn" onclick="printSlips()" disabled style="background:#0b7a3b">🖨 Print (2 per A4)</button><button class="secondary" onclick="slipSelectAll(true)">Tick all</button><button class="secondary" onclick="slipSelectAll(false)">Untick all</button></div>
-      <div class="finance-status" id="slipStatus"></div>
-      <div class="slip-preview" id="slipPreview"></div>
-    </section>
-    <section id="finPanelLedger" style="display:none">
-      <h3>Fund Ledger</h3>
-      <div class="finance-grid"><div class="finance-field"><label>Fund</label><select id="finLedgerFund" onchange="renderFinanceLedger()"></select></div><div class="finance-field"><label>From Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finFrom" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>To Date</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="finTo" oninput="renderFinanceLedger()"></div><div class="finance-field"><label>Search</label><input id="finLedgerSearch" oninput="renderFinanceLedger()"></div></div>
-      <div class="finance-status" id="finLedgerStatus"></div>
-      <div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th class="num">Balance</th><th class="wrap-s">Remarks</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finLedgerBody"></tbody></table></div>
-    </section>
-    <section id="finPanelVouchers" style="display:none"><h3>Search / Edit / Delete</h3><div class="finance-grid"><div class="finance-field finance-span-2"><label>Search</label><input id="finVoucherSearch" oninput="renderFinanceVouchers()"></div><div class="finance-field"><label>Type</label><select id="finVoucherType" onchange="renderFinanceVouchers()"><option value="">All</option><option value="receipt">Has Receipt</option><option value="payment">Has Payment</option></select></div></div><div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Date</th><th>Fund / PB</th><th>Voucher</th><th class="wrap">Particulars</th><th class="num">Receipt</th><th class="num">Payment</th><th>Slip</th><th>Action</th></tr></thead><tbody id="finVoucherBody"></tbody></table></div></section>
-    <section id="finPanelReport" style="display:none">
-      <h3>📑 Report — Receipt &amp; Payment (Fund-wise)</h3>
-      <div class="finance-grid">
-        <div class="finance-field finance-span-2"><label>Report type</label><select id="repType" onchange="repGenerate()"><option value="synopsis">Synopsis — fund-wise summary (Receipt side | Payment side)</option><option value="demand">Demand / Detailed statement — entry-wise (Receipt side | Payment side)</option></select></div>
-        <div class="finance-field"><label>Fund / PB</label><select id="repFund" onchange="repGenerate()"></select></div>
-        <div class="finance-field"><label>Up to date *</label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="repTo" oninput="repGenerate()"></div>
-        <div class="finance-field"><label>From date <span style="font-weight:400">(blank = from beginning)</span></label><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="repFrom" oninput="repGenerate()"></div>
-        <div class="finance-field"><label>&nbsp;</label><label style="font-weight:400"><input type="checkbox" id="repSkipEmpty" checked style="width:auto" onchange="repGenerate()"> Skip funds with no figures</label></div>
-      </div>
-      <div class="finance-actions"><button onclick="repGenerate()">📑 Generate</button><button onclick="repPrint()" style="background:#0b7a3b">🖨 Print / Save PDF</button><button class="secondary" onclick="repExcel()">📥 Excel</button></div>
-      <div class="finance-status" id="repStatus"></div>
-      <div class="rep-sheet" id="repOut"></div>
-    </section>
-    <section id="finPanelBackup" style="display:none"><h3>Excel Import / Export / Backup</h3><div class="finance-actions"><button onclick="document.getElementById('finExcelFile').click()">📥 Load Excel Workbook</button><button onclick="exportFinanceJSON()">Export JSON</button><button onclick="exportFinanceCSV()">Export CSV</button><input type="file" id="finExcelFile" accept=".xls,.xlsx" style="display:none" onchange="importLegacyCashWorkbook(this.files[0])"></div><div class="finance-status" id="finBackupStatus">Excel imports are synced to Firebase and are available live on other computers using the same login.</div></section>
+<div id="app">
+  <nav class="tabs">
+    <button class="tabBtn active" data-tab="cashbook" onclick="showTab('cashbook')">Cash Book</button>
+    <button class="tabBtn" data-tab="voucher" onclick="showTab('voucher')">Voucher Register</button>
+    <button class="tabBtn" data-tab="passbook" onclick="showTab('passbook')">Pass Book</button>
+    <button class="tabBtn" data-tab="report" onclick="showTab('report');repInit()">📑 Report</button>
+  </nav>
+
+  <div class="orderBar noprint">
+    <b>📅 View all records (Cash Book, Voucher Register, Pass Book):</b>
+    <button type="button" id="ord_old" onclick="setViewOrder('old')">⬇ Old → New</button>
+    <button type="button" id="ord_new" onclick="setViewOrder('new')">⬆ New → Old</button>
+    <span style="color:var(--grey);font-size:.75rem;">Running balance always follows true date order.</span>
   </div>
+
+  <div class="deleteSecurityTop noprint">
+    <div class="title">🔐 DELETE PASSWORD — REQUIRED FOR ALL DELETIONS</div>
+    <div style="font-size:.82rem;margin-bottom:7px;">
+      Enter the shared Delete Password here. It is required for deleting Cash Book, Voucher Register and Pass Book entries,
+      including old/historical and newly added records.
+    </div>
+    <input type="password" id="topDeletePasswordInput" autocomplete="new-password" placeholder="Enter Delete Password">
+    <button onclick="saveTopDeletePassword()">Set / Change Password</button>
+    <button type="button" onclick="clearTopDeletePassword()" style="background:var(--navy2);">Clear</button>
+    <span id="topDeletePasswordStatus" class="status">Loading…</span>
+  </div>
+
+  <!-- CASH BOOK -->
+  <div class="panel active" id="panel-cashbook">
+    <div class="subtabs" id="fundTabs"></div>
+    <div class="toolbar noprint">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="cb_date">
+      <input type="text" id="cb_particulars" placeholder="Particulars" style="min-width:220px;">
+      <input type="text" id="cb_vno" placeholder="V.No" style="width:90px;">
+      <input type="number" id="cb_received" placeholder="Received (₹)" style="width:120px;">
+      <input type="number" id="cb_payment" placeholder="Payment (₹)" style="width:120px;">
+      <button onclick="addCashEntry()">+ Add Entry</button>
+      <button class="secondary" onclick="window.print()">🖨 Print</button>
+      <span class="balBox" id="cb_balance">Balance: —</span>
+    </div>
+    <div class="toolbar noprint searchBar">
+      🔎 <input type="text" id="cb_search" placeholder="Search particulars, V.No, amount…" style="min-width:240px;" oninput="renderCashbook()">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="cb_search_from" title="From date" oninput="renderCashbook()">
+      <span>to</span>
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="cb_search_to" title="To date" oninput="renderCashbook()">
+      <button class="secondary" onclick="clearCashSearch()">Clear</button>
+      <span id="cb_matchInfo" style="font-size:.78rem;color:var(--grey);"></span>
+    </div>
+    <div class="toolbar noprint">
+      <button class="danger" id="cb_delSel" onclick="selDelete('cb')">🗑 Delete selected (0)</button>
+      <button class="secondary" onclick="dupSelect('cb')" title="Ticks repeated entries (keeps the first of each) so you can review and delete them together">🧹 Tick duplicates</button>
+      <span style="font-size:.76rem;color:var(--grey);">Tick rows with the checkbox on the left, then delete them all at once.</span>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th class="noprint"><input type="checkbox" title="Tick all shown rows" onchange="selAll('cb',this.checked)"></th><th>Date</th><th>Particulars</th><th>V.No</th><th>Received (₹)</th><th>Payment (₹)</th><th>Balance (₹)</th><th class="noprint">—</th></tr></thead>
+        <tbody id="cb_tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VOUCHER REGISTER -->
+  <div class="panel" id="panel-voucher">
+    <div class="toolbar noprint">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="v_date">
+      <select id="v_fund"><option value="Development">Development</option><option value="SSM">SSM</option><option value="RMSA">RMSA</option><option value="Hostel Fund">Hostel Fund</option><option value="Vocational">Vocational</option><option value="MDM">MDM</option></select>
+      <input type="text" id="v_vno" placeholder="Voucher No" style="width:110px;">
+      <input type="text" id="v_payto" placeholder="Pay To" style="min-width:160px;">
+      <input type="text" id="v_purpose" placeholder="Purpose / Particulars" style="min-width:220px;">
+      <input type="number" id="v_amount" placeholder="Amount (₹)" style="width:120px;">
+      <button onclick="addVoucher()">+ Add Voucher</button>
+      <button class="secondary" onclick="printVoucher()">🖨 Print Selected</button>
+    </div>
+    <div class="toolbar noprint searchBar">
+      🔎 <input type="text" id="v_search" placeholder="Search V.No, pay to, purpose, amount…" style="min-width:240px;" oninput="renderVouchers()">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="v_search_from" title="From date" oninput="renderVouchers()">
+      <span>to</span>
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="v_search_to" title="To date" oninput="renderVouchers()">
+      <button class="secondary" onclick="clearVoucherSearch()">Clear</button>
+      <span id="v_matchInfo" style="font-size:.78rem;color:var(--grey);"></span>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th></th><th>V.No</th><th>Date</th><th>Fund</th><th>Pay To</th><th>Purpose</th><th>Amount (₹)</th><th class="noprint">—</th></tr></thead>
+        <tbody id="v_tbody"></tbody>
+      </table>
+    </div>
+    <div class="voucherCard" id="voucherPrintArea" style="display:none;"></div>
+  </div>
+
+  <!-- PASS BOOK -->
+  <div class="panel" id="panel-passbook">
+    <div class="subtabs" id="bankTabs"></div>
+    <div class="toolbar noprint">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="pb_date">
+      <input type="text" id="pb_particulars" placeholder="Particulars" style="min-width:220px;">
+      <input type="number" id="pb_received" placeholder="Deposit (₹)" style="width:120px;">
+      <input type="number" id="pb_payment" placeholder="Withdrawal (₹)" style="width:120px;">
+      <button onclick="addPassbookEntry()">+ Add Entry</button>
+      <button class="secondary" onclick="window.print()">🖨 Print</button>
+      <button class="secondary" onclick="chqSync(true)" title="Fetch new cheques from the Cheque Issue Register now (this also happens automatically)">🔄 Sync Cheque Register</button>
+      <button class="secondary" onclick="chqSetCutoff()" title="Cheques up to this Sl. No. are treated as already fetched">✂ Fetch cut-off</button>
+      <button class="secondary" onclick="document.getElementById('bankFile').click()" title="Load transactions read from the bank Pass Book PDF/JPEG (JSON). Matching cheques get their W/D date.">📄 Load bank Pass Book data</button>
+      <select id="bankMode" title="How to load the bank data"><option value="merge">Add to existing entries</option><option value="replace">REPLACE all entries of this Pass Book</option></select>
+      <input type="file" id="bankFile" accept=".json,application/json" style="display:none" onchange="loadBankFile(this)">
+      <span class="balBox" id="pb_balance">Balance: —</span>
+    </div>
+    <div id="chq_status" class="noprint" style="font-family:Arial,sans-serif;font-size:.76rem;color:var(--grey);margin:-4px 0 8px;"></div>
+    <div class="toolbar noprint">
+      <button class="danger" id="pb_delSel" onclick="selDelete('pb')">🗑 Delete selected (0)</button>
+      <button class="secondary" onclick="dupSelect('pb')" title="Ticks repeated entries (keeps the first of each) so you can review and delete them together">🧹 Tick duplicates</button>
+      <button class="danger" onclick="pbClearAll()" title="Deletes every entry (a backup is downloaded first)">⚠ Clear Pass Book…</button>
+      <select id="pb_clearScope"><option value="one">this Pass Book</option><option value="all">ALL Pass Books</option></select>
+      <span style="font-size:.76rem;color:var(--grey);">Tick rows with the checkbox on the left, then delete them all at once.</span>
+    </div>
+    <div class="toolbar noprint searchBar">
+      🔎 <input type="text" id="pb_search" placeholder="Search particulars, amount…" style="min-width:240px;" oninput="renderPassbook()">
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="pb_search_from" title="From date" oninput="renderPassbook()">
+      <span>to</span>
+      <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="pb_search_to" title="To date" oninput="renderPassbook()">
+      <button class="secondary" onclick="clearPassSearch()">Clear</button>
+      <span id="pb_matchInfo" style="font-size:.78rem;color:var(--grey);"></span>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th class="noprint"><input type="checkbox" title="Tick all shown rows" onchange="selAll('pb',this.checked)"></th><th>Date</th><th>Particulars</th><th>Deposit (₹)</th><th>Withdrawal (₹)</th><th>Balance (₹)</th><th class="noprint">—</th></tr></thead>
+        <tbody id="pb_tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="panel" id="panel-report">
+    <div class="toolbar noprint">
+      <select id="rp_type" onchange="repGenerate()"><option value="synopsis">Synopsis — fund-wise summary (Receipt | Payment)</option><option value="demand">Demand / Detailed statement (Income side | Expenditure side)</option></select>
+      <select id="rp_scope" onchange="repGenerate()"></select>
+      <label style="font-size:.8rem">Up to <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="rp_to" oninput="repGenerate()"></label>
+      <label style="font-size:.8rem">From <input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="blank = beginning" id="rp_from" oninput="repGenerate()"></label>
+      <label style="font-size:.8rem"><input type="checkbox" id="rp_skip" checked onchange="repGenerate()"> Skip empty accounts</label>
+      <button onclick="repGenerate()">📑 Generate</button>
+      <button class="secondary" onclick="repPrint()">🖨 Print / Save PDF</button>
+      <button class="secondary" onclick="repExcel()">📥 Excel</button>
+    </div>
+    <div id="rp_status" style="font-family:Arial,sans-serif;font-size:.78rem;color:var(--grey)"></div>
+    <div class="rep-sheet" id="rp_out"></div>
+  </div>
+
 </div>
 
-<div id="slipPrintRoot"></div>
+<footer class="note noprint">Taldangra Fulmati High School [H.S.] — internal accounts tool. Synced live via Firebase.</footer>
 <div id="reportPrintRoot"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-const FINANCE_FUNDS = [
-  ['MDM','MDM','cash'],['HOSTEL','HOSTEL','cash'],['VOC','VOC','cash'],['MISC','MISC','cash'],
-  ['MP_HS_FEE','MP & HS FEE','cash'],['FW','FW','collection'],['SP','S.P.','cash'],
-  ['PB_GEN','PB (GEN)','bank'],['PB_COMP','PB (Comp)','bank'],['OTHER_EXAM','OTHER EXAM','cash'],
-  ['CENTRE_EXAM','CENTRE EXAM','cash'],['PB_MP','PB (MP)','bank'],['GANDHI_26000','GANDHI-26000','cash'],
-  ['BATCH_FUND','Batch Fund','cash'],['SP_FW','S.P._FW','cash']
-];
-const LEGACY_SHEET_MAP={'MDM':'MDM','HOSTEL':'HOSTEL','VOC':'VOC','MISC':'MISC','MP&HS FEE':'MP_HS_FEE','FW':'FW','S.P.':'SP','PB(GEN)':'PB_GEN','PB(Comp)':'PB_COMP','OTHER EXAM':'OTHER_EXAM','CENTRE_EXAM':'CENTRE_EXAM','PB(MP)':'PB_MP','GANDHI-26000':'GANDHI_26000','Batch_Fund':'BATCH_FUND','S.P._FW':'SP_FW'};
-
+/* ======================= FIREBASE CONFIG ======================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCiqQFsnbSi6eCgUI_W3NTybzIkRmCI_54",
   authDomain: "tfhs-portal.firebaseapp.com",
@@ -229,36 +286,38 @@ const firebaseConfig = {
   messagingSenderId: "316041012204",
   appId: "1:316041012204:web:04ee8b19374c60f63716c9"
 };
-firebase.initializeApp(firebaseConfig); 
-const auth = firebase.auth(), db = firebase.firestore();
+/* ================================================================= */
 
-let financeRows = [], financeOpeningBalances = {}, financeLoaded = false;
-let financeTransactionsUnsubscribe = null;
-let financeOpeningBalancesUnsubscribe = null;
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-function finEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function finNum(v){if(typeof v==='number')return isFinite(v)?v:0;let n=parseFloat(String(v??'').replace(/[₹,]/g,'').trim());return isFinite(n)?n:0;}
-function finMoney(n){return '₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function finCurrentUser(){return auth.currentUser?(auth.currentUser.email||auth.currentUser.uid):'unknown';}
-function finDateValue(v){if(v==null||v==='')return '';if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'&&XLSX?.SSF){let d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:'';}let x=String(v).trim();let m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}m=x.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`:'';}
+const FUNDS = [
+  {id:"development", label:"Development"},
+  {id:"ssm", label:"SSM"},
+  {id:"hostel", label:"Hostel Fund"},
+  {id:"vocational", label:"Vocational"},
+  {id:"mdm", label:"MDM"}
+];
+const BANKS = [
+  {id:"dev_bank", label:"Dev A/C (5536011000624)"},
+  {id:"salary_bdcc", label:"Salary A/C (BDCC)"},
+  {id:"hostel_fund", label:"Hostel Fund A/C"},
+  {id:"ssa_sbi", label:"SSA A/C (SBI)"},
+  {id:"voc_bank", label:"Vocational Pass Book (VOC)"},
+  {id:"mdm_bank", label:"MDM Pass Book (MDM)"}
+];
 
-/* ---------- Receipt + Payment on the SAME entry (a side that is not used is stored as 0) ----------
-   New entries store  receipt  and  payment  (both always numbers).
-   Older entries (type + amount, incl. Excel imports) are read through the same two helpers. */
-function rAmt(x){ return (x.receipt!==undefined||x.payment!==undefined) ? finNum(x.receipt) : (x.type==='receipt' ? finNum(x.amount) : 0); }
-function pAmt(x){ return (x.receipt!==undefined||x.payment!==undefined) ? finNum(x.payment) : (x.type==='payment' ? finNum(x.amount) : 0); }
-function moneyCell(v){ return v>0 ? finMoney(v) : '<span class="amt-nil">'+finMoney(0)+'</span>'; }
-function fundInfo(code){ const f=FINANCE_FUNDS.find(x=>x[0]===code); return f ? {code:f[0],label:f[1],kind:f[2]} : {code:code,label:code||'',kind:'cash'}; }
-function finFY(iso){ const m=/^(\d{4})-(\d{2})/.exec(iso||''); if(!m) return ''; const y=+m[1], mo=+m[2], s=mo>=4?y:y-1; return s+'-'+String((s+1)%100).padStart(2,'0'); }
-function elv(id){ const e=document.getElementById(id); return e ? e.value : ''; }
+let currentFund = "development";
+let currentBank = "dev_bank";
+let cbEntries = [], vEntries = [], pbEntries = [];
+let cbUnsub = null, pbUnsub = null, vUnsub = null;
+let cbEditingId = null, pbEditingId = null, vEditingId = null;
+let deletePasswordCache = null;
 
-/* 0 is typed in automatically for the unused side; click selects it so typing replaces it */
-document.addEventListener('focusin', e=>{ if(e.target && e.target.classList && e.target.classList.contains('zf')) setTimeout(()=>{ try{e.target.select();}catch(_){} },0); });
-document.addEventListener('focusout', e=>{ if(e.target && e.target.classList && e.target.classList.contains('zf') && String(e.target.value).trim()==='') e.target.value='0'; });
-
-/* ---------- View order (Fund Ledger + Search) ---------- */
+/* ---------- View order (applies to Cash Book, Voucher Register, Pass Book) ---------- */
 let viewOrder = 'old';   // 'old' = oldest first, 'new' = newest first
-try{ const sv = localStorage.getItem('tfhsViewOrder'); if(sv==='old'||sv==='new') viewOrder = sv; }catch(e){}
+try{ const saved = localStorage.getItem('tfhsViewOrder'); if(saved==='old'||saved==='new') viewOrder = saved; }catch(e){}
 function orderRows(rows){ return viewOrder==='new' ? rows.slice().reverse() : rows; }
 function updateOrderButtons(){
   const o=document.getElementById('ord_old'), n=document.getElementById('ord_new');
@@ -269,23 +328,11 @@ function setViewOrder(mode){
   viewOrder = mode;
   try{ localStorage.setItem('tfhsViewOrder', mode); }catch(e){}
   updateOrderButtons();
-  renderFinanceLedger(); renderFinanceVouchers();
+  renderCashbook(); renderPassbook(); renderVouchers();
 }
-/* Oldest-first comparator: date, then time entered, then id (numeric-aware so imported row 2 sorts before row 10) */
-function finCompare(a,b){
-  const d = String(a.date||'').localeCompare(String(b.date||''));
-  if(d) return d;
-  const ca = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
-  const cb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
-  if(ca!==cb) return ca-cb;
-  return String(a.id).localeCompare(String(b.id), undefined, {numeric:true});
-}
+updateOrderButtons();
 
-/* ---------- Dates: shown and typed as DD-MM-YYYY (stored as YYYY-MM-DD) ---------- */
-function fmtDMY(d){
-  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||''));
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : String(d||'');
-}
+/* ---------- Dates: everything shown/typed as DD-MM-YYYY (stored as YYYY-MM-DD) ---------- */
 function dmyToISO(s){
   const m=/^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s||'').trim());
   if(!m) return '';
@@ -293,7 +340,13 @@ function dmyToISO(s){
   return (dt.getFullYear()===y && dt.getMonth()===mo-1 && dt.getDate()===d) ? `${m[3]}-${m[2]}-${m[1]}` : '';
 }
 function dmyVal(id){ const el=document.getElementById(id); return el ? dmyToISO(el.value) : ''; }
-function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function dmyEditVal(id){
+  const raw=(document.getElementById(id).value||'').trim();
+  if(!raw) return '';
+  const iso=dmyToISO(raw);
+  if(!iso){ alert('Enter the date as DD-MM-YYYY (for example 05-04-2026).'); return null; }
+  return iso;
+}
 document.addEventListener('input', e=>{
   const t=e.target;
   if(t && t.classList && t.classList.contains('dmy')){
@@ -302,809 +355,1030 @@ document.addEventListener('input', e=>{
     if(out!==t.value) t.value=out;
   }
 }, true);
-updateOrderButtons();
 
-function initFinanceSelectors(){
-  let a = document.getElementById('finFund'), b = document.getElementById('finLedgerFund');
-  if(a && !a.options.length) FINANCE_FUNDS.forEach(x => a.add(new Option(x[1], x[0])));
-  if(b && !b.options.length){ b.add(new Option('All Funds','')); FINANCE_FUNDS.forEach(x => b.add(new Option(x[1], x[0]))); }
-  let d = document.getElementById('finDate');
-  if(d && !d.value) d.value = fmtDMY(todayISO());
-  syncFundFields();
+function escapeAttr(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
-auth.onAuthStateChanged(async u => {
-  const overlay = document.getElementById('loginOverlay');
-  const app = document.getElementById('appRoot');
-  const error = document.getElementById('loginError');
+/* ---------- Auth ---------- */
+function login(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  document.getElementById('loginMsg').textContent = '';
+  auth.signInWithEmailAndPassword(email, pass).catch(err=>{
+    document.getElementById('loginMsg').textContent = err.message;
+  });
+}
+function logout(){ auth.signOut(); }
 
-  if(u){
-    // Firebase authentication succeeded: reveal the application.
-    if(overlay) overlay.style.display = 'none';
-    if(app) app.style.display = 'block';
-    if(error) error.textContent = '';
-
-    try {
-      await loadFinanceFromFirebase();
-      await loadDeletePassword();
-      restoreLocalExcelImport();
-      initFinanceSelectors();
-      renderAll();
-    } catch(e) {
-      console.error('Application initialization failed:', e);
-      const status = document.getElementById('finDashStatus');
-      if(status) status.textContent = 'Application initialization failed: ' + e.message;
-    }
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('userBox').style.display='block';
+    document.getElementById('userEmail').textContent = user.email;
+    buildFundTabs(); buildBankTabs();
+    loadDeletePassword();
+    watchCashbook(currentFund);
+    watchPassbook(currentBank);
+    watchVouchers();
+    repWatchAll();
+    chqWatch(); chqShowStatus('');
   } else {
-    showLogin();
+    chqUnwatch();
+    document.getElementById('loginScreen').style.display='block';
+    document.getElementById('app').style.display='none';
+    document.getElementById('userBox').style.display='none';
   }
 });
 
-function showLogin(){
-  const overlay = document.getElementById('loginOverlay');
-  const app = document.getElementById('appRoot');
-  const error = document.getElementById('loginError');
-
-  if(overlay) overlay.style.display = 'flex';
-  if(app) app.style.display = 'none';
-  if(error) error.textContent = '';
-}
-
-async function doLogin(){
-  const e = document.getElementById('loginEmail').value.trim();
-  const p = document.getElementById('loginPassword').value;
-  const error = document.getElementById('loginError');
-
-  if(error) error.textContent = '';
-
-  if(!e || !p){
-    if(error) error.textContent = 'Please enter both Email and Password.';
-    return;
-  }
-
-  try {
-    // Do not manually change the UI here. Firebase's auth state listener
-    // will reveal the application only after authentication succeeds.
-    await auth.signInWithEmailAndPassword(e, p);
-  } catch(x) {
-    console.error('Login error:', x);
-    if(error) error.textContent = x.message || 'Login failed.';
-  }
-}
-
-function doLogout(){
-  if(financeTransactionsUnsubscribe) {
-    financeTransactionsUnsubscribe();
-    financeTransactionsUnsubscribe = null;
-  }
-  if(financeOpeningBalancesUnsubscribe) {
-    financeOpeningBalancesUnsubscribe();
-    financeOpeningBalancesUnsubscribe = null;
-  }
-  financeRows = [];
-  financeOpeningBalances = {};
-  financeLoaded = false;
-  auth.signOut();
-}
-
-['loginEmail','loginPassword'].forEach(id => {
-  const el = document.getElementById(id);
-  if(el) el.addEventListener('keydown', e => {
-    if(e.key === 'Enter') doLogin();
-  });
-});
-
-async function loadFinanceFromFirebase(){
-  if(!auth.currentUser) return;
-
-  // Stop previous listeners before creating new ones.
-  if(financeTransactionsUnsubscribe) {
-    financeTransactionsUnsubscribe();
-    financeTransactionsUnsubscribe = null;
-  }
-  if(financeOpeningBalancesUnsubscribe) {
-    financeOpeningBalancesUnsubscribe();
-    financeOpeningBalancesUnsubscribe = null;
-  }
-
-  const status = document.getElementById('finDashStatus');
-
-  financeTransactionsUnsubscribe = db.collection('financeTransactions')
-    .onSnapshot(
-      snapshot => {
-        financeRows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        financeLoaded = true;
-        renderAll();
-        if(status) status.textContent =
-          `${financeRows.length} entries | ${FINANCE_FUNDS.length} fund/accounts | LIVE cloud sync`;
-      },
-      error => {
-        console.error('Firebase transaction listener failed:', error);
-        if(status) status.textContent = 'Firebase live sync failed: ' + error.message;
-      }
-    );
-
-  financeOpeningBalancesUnsubscribe = db.collection('financeOpeningBalances')
-    .onSnapshot(
-      snapshot => {
-        financeOpeningBalances = Object.fromEntries(
-          snapshot.docs.map(d => [d.id, d.data()])
-        );
-        renderAll();
-      },
-      error => {
-        console.error('Firebase opening balance listener failed:', error);
-        if(status) status.textContent = 'Opening balance sync failed: ' + error.message;
-      }
-    );
-}
-
-function renderAll(){ renderFinanceDashboard(); renderFinanceLedger(); renderFinanceVouchers(); if(typeof repGenerate==='function' && document.getElementById('finPanelReport')?.style.display==='block') repGenerate(); }
-
-function renderFinanceDashboard(){
-  let t = todayISO();
-  let r = financeRows.filter(x => x.date === t).reduce((a,x) => a + rAmt(x), 0);
-  let p = financeRows.filter(x => x.date === t).reduce((a,x) => a + pAmt(x), 0);
-  
-  let rElem = document.getElementById('finTodayReceipt');
-  let pElem = document.getElementById('finTodayPayment');
-  let netElem = document.getElementById('finTodayNet');
-  let countElem = document.getElementById('finEntryCount');
-  let dashStatus = document.getElementById('finDashStatus');
-  let fundSummary = document.getElementById('finFundSummary');
-
-  if(rElem) rElem.textContent = finMoney(r);
-  if(pElem) pElem.textContent = finMoney(p);
-  if(netElem) netElem.textContent = finMoney(r - p);
-  if(countElem) countElem.textContent = financeRows.length;
-  if(dashStatus) dashStatus.textContent = `${financeRows.length} entries | ${FINANCE_FUNDS.length} fund/accounts | cloud data`;
-  
-  if(fundSummary){
-    fundSummary.innerHTML = FINANCE_FUNDS.map(f => {
-      let mine = financeRows.filter(x => x.fund === f[0]);
-      let rr = mine.reduce((a,x) => a + rAmt(x), 0);
-      let pp = mine.reduce((a,x) => a + pAmt(x), 0);
-      let ob = finNum(financeOpeningBalances[f[0]]?.openingBalance);
-      return `<tr><td>${finEsc(f[1])}</td><td>${finMoney(rr)}</td><td>${finMoney(pp)}</td><td>${finMoney(ob + rr - pp)}</td><td>${mine.length}</td></tr>`;
-    }).join('');
-  }
-}
-
-function finFilteredRows(){
-  let f = document.getElementById('finLedgerFund')?.value || '';
-  let from = dmyVal('finFrom');
-  let to = dmyVal('finTo');
-  let q = (document.getElementById('finLedgerSearch')?.value || '').toLowerCase();
-  return financeRows.filter(x => (!f || x.fund === f) && (!from || x.date >= from) && (!to || x.date <= to) && (!q || [x.particulars, x.voucher, x.remarks, x.paidTo].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
-}
-
-function actionButtons(id){ const x = financeRows.find(r => r.id === id); const slip = x && pAmt(x) > 0 ? `<button onclick="slipForEntry('${id}')">🧾 Slip</button> ` : ''; return slip + `<button onclick="editFinanceEntry('${id}')">✏️ Edit</button> <button class="danger" onclick="deleteFinanceEntry('${id}')">🗑 Delete</button>`; }
-
-function renderFinanceLedger(){
-  let rows = finFilteredRows(), fund = document.getElementById('finLedgerFund')?.value || '', bal = fund ? finNum(financeOpeningBalances[fund]?.openingBalance) : 0;
-  let body = document.getElementById('finLedgerBody');
-  let status = document.getElementById('finLedgerStatus');
-  if(body){
-    const calc = rows.map(x => { bal += rAmt(x) - pAmt(x); return {x, rb:bal}; });
-    body.innerHTML = orderRows(calc).map(({x, rb}) => {
-      const part = finEsc(x.particulars) + (x.paidTo ? ` <small style="color:#5b6b7a">→ ${finEsc(x.paidTo)}</small>` : '');
-      return `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(x.voucher)}</td><td class="wrap">${part}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td class="num">${finMoney(rb)}</td><td class="wrap-s">${finEsc(x.remarks)}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`;
-    }).join('') || '<tr><td colspan="9">No entries found.</td></tr>';
-  }
-  if(status) status.textContent = `Showing ${rows.length} entries.`;
-}
-
-function renderFinanceVouchers(){
-  let q = (document.getElementById('finVoucherSearch')?.value || '').toLowerCase();
-  let t = document.getElementById('finVoucherType')?.value || '';
-  let rows = financeRows.filter(x => (!t || (t === 'receipt' ? rAmt(x) > 0 : pAmt(x) > 0)) && (!q || [x.voucher, x.particulars, x.fund, x.paidTo].some(v => String(v||'').toLowerCase().includes(q)))).sort(finCompare);
-  let body = document.getElementById('finVoucherBody');
-  if(body){
-    body.innerHTML = orderRows(rows).map(x => `<tr><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund)}</td><td>${finEsc(x.voucher)}</td><td class="wrap">${finEsc(x.particulars)}</td><td class="num">${moneyCell(rAmt(x))}</td><td class="num">${moneyCell(pAmt(x))}</td><td>${x.slipNo ? finEsc(x.slipNo) : ''}</td><td>${actionButtons(x.id)}</td></tr>`).join('') || '<tr><td colspan="8">No entries found.</td></tr>';
-  }
-}
-
-function financeTab(tab){
-  ['dashboard','entry','slip','ledger','vouchers','report','backup'].forEach(t => {
-    let p = document.getElementById('finPanel'+t[0].toUpperCase()+t.slice(1));
-    if(p) p.style.display = t === tab ? 'block' : 'none';
-    let btn = document.querySelector(`[data-ftab="${t}"]`);
-    if(btn) btn.classList.toggle('active', t === tab);
-  });
-  if(tab === 'entry') initFinanceSelectors();
-  if(tab === 'slip') initSlipTab();
-  if(tab === 'report') initReportTab();
-  setTimeout(finGrowAll, 0);
-  const ob = document.getElementById('finOrderBar');
-  if(ob) ob.style.display = (tab === 'ledger' || tab === 'vouchers') ? 'flex' : 'none';
-}
-
-function financeCalculateAmount(){
-  let q = finNum(document.getElementById('finQty')?.value);
-  let r = finNum(document.getElementById('finRate')?.value);
-  if(q && r){
-    const target = document.getElementById('finCalcTarget')?.value === 'receipt' ? 'finReceipt' : 'finPayment';
-    document.getElementById(target).value = (q * r).toFixed(2);
-  }
-}
-
-/* Cash fund -> slip prints BY HAND / CASH PAYMENT.  PB (bank) fund -> cheque no. and A/c no. are used. */
-function syncFundFields(){
-  const f = fundInfo(document.getElementById('finFund')?.value);
-  const mode = document.getElementById('finSlipMode')?.value || '';
-  const bank = slipIsBank(f.code, mode);
-  ['finCheque','finAccNo'].forEach(id => { const el = document.getElementById(id); if(el) el.disabled = false; });   // always editable: a cash fund can be paid through the bank A/c
-  const h = document.getElementById('finFundHint');
-  if(h) h.textContent = bank ? 'Slip will show Cheque No. and A/c No. (paid through bank).' : 'Slip will show BY HAND / CASH PAYMENT. Choose "Slip paid via → Bank A/c" if this was paid through the bank.';
-}
-
-function clearFinanceEntry(keepDateFund){
-  const keepDate = keepDateFund === true;   // after a save: stay on the same date & fund for the next entry
-  const date = document.getElementById('finDate')?.value;
-  document.getElementById('finEditId').value = '';
-  document.getElementById('finEntryTitle').textContent = 'Daily Cash / Bank Entry';
-  document.getElementById('finSaveBtn').textContent = 'Save Entry';
-  ['finVoucher','finSlipNo','finParticulars','finPaidTo','finQty','finRate','finCheque','finAccNo','finRemarks','finSlipMode'].forEach(id => {
-    let el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  ['finReceipt','finPayment'].forEach(id => { let el = document.getElementById(id); if(el) el.value = '0'; });
-  let status = document.getElementById('finEntryStatus');
-  if(!keepDate && status) status.textContent = '';
-  let d = document.getElementById('finDate');
-  if(d) d.value = keepDate && date ? date : fmtDMY(todayISO());
-  syncFundFields();
-}
-
-
-let deletePasswordCache = '';
+/* ---------- Shared Delete Password ---------- */
 async function loadDeletePassword(){
   try{
-    const snap=await db.collection('_meta').doc('deleteSecurity').get();
-    deletePasswordCache=snap.exists ? String(snap.data().deletePassword||'') : '';
-    const st=document.getElementById('topDeletePasswordStatus');
-    if(st) st.textContent=deletePasswordCache?'Password is set.':'No password set — set one now.';
-  }catch(e){console.error(e);}
+    const snap = await db.collection('_meta').doc('deleteSecurity').get();
+    deletePasswordCache = snap.exists ? (snap.data().deletePassword || null) : null;
+    const el = document.getElementById('deletePasswordStatus');
+    if(el) el.textContent = deletePasswordCache ? 'Delete password is set.' : 'No delete password set.';
+    setDeletePasswordStatus(deletePasswordCache ? 'Delete password is set.' : 'No Delete Password set.');
+  }catch(err){
+    console.error('Delete password load error:', err);
+    const el = document.getElementById('deletePasswordStatus');
+    if(el) el.textContent = 'Could not load password.';
+    setDeletePasswordStatus('Could not load password.');
+  }
+}
+async function saveDeletePassword(){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  const input = document.getElementById('deletePasswordInput');
+  const p1 = input ? input.value : '';
+  if(!p1){ alert('Enter a Delete Password.'); return; }
+  const p2 = prompt('Re-enter the Delete Password to confirm:');
+  if(p2 === null) return;
+  if(p1 !== p2){ alert('Passwords do not match.'); return; }
+  try{
+    await db.collection('_meta').doc('deleteSecurity').set({
+      deletePassword:p1,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:auth.currentUser.email || ''
+    },{merge:true});
+    deletePasswordCache = p1;
+    if(input) input.value = '';
+    const el = document.getElementById('deletePasswordStatus');
+    if(el) el.textContent = 'Delete password saved.';
+    alert('Shared Delete Password saved successfully.');
+  }catch(err){ alert('Could not save Delete Password: ' + err.message); }
 }
 async function saveTopDeletePassword(){
-  const v=document.getElementById('topDeletePasswordInput')?.value||'';
-  if(!v) return alert('Please enter a password.');
+  const src = document.getElementById('topDeletePasswordInput');
+  const setup = document.getElementById('deletePasswordInput');
+  const input = src || setup;
+  const p1 = input ? input.value : '';
+  if(!p1){ alert('Enter a Delete Password.'); if(input) input.focus(); return; }
+  const p2 = prompt('Re-enter the Delete Password to confirm:');
+  if(p2 === null) return;
+  if(p1 !== p2){ alert('Passwords do not match.'); return; }
   try{
-    await db.collection('_meta').doc('deleteSecurity').set({deletePassword:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-    deletePasswordCache=v;
-    document.getElementById('topDeletePasswordInput').value='';
-    document.getElementById('topDeletePasswordStatus').textContent='Password saved.';
-  }catch(e){alert('Password save failed: '+e.message);}
+    await db.collection('_meta').doc('deleteSecurity').set({
+      deletePassword:p1,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:auth.currentUser ? (auth.currentUser.email || '') : ''
+    },{merge:true});
+    deletePasswordCache = p1;
+    if(src) src.value='';
+    if(setup) setup.value='';
+    setDeletePasswordStatus('Delete password saved successfully.');
+    alert('Shared Delete Password saved successfully.');
+  }catch(err){ alert('Could not save Delete Password: ' + err.message); }
 }
 function clearTopDeletePassword(){
-  const el=document.getElementById('topDeletePasswordInput'); if(el) el.value='';
-}
-function verifyEditDeletePassword(action){
-  if(!deletePasswordCache) { alert('No Edit / Delete Password is set. Set it in the red security box first.'); return false; }
   const el=document.getElementById('topDeletePasswordInput');
-  const v=el?.value||'';
-  if(!v){ alert('Enter the Edit / Delete Password in the red security box first.'); el?.focus(); return false; }
-  if(v!==deletePasswordCache){ if(el) el.value=''; alert('Incorrect Edit / Delete Password.'); return false; }
-  if(el) el.value='';
+  if(el){el.value='';el.focus();}
+}
+function setDeletePasswordStatus(text){
+  const a=document.getElementById('topDeletePasswordStatus');
+  const b=document.getElementById('deletePasswordStatus');
+  if(a) a.textContent=text;
+  if(b) b.textContent=text;
+}
+async function verifyDeletePassword(){
+  if(!auth.currentUser){ alert('Please sign in first.'); return false; }
+  if(deletePasswordCache === null) await loadDeletePassword();
+  if(!deletePasswordCache){
+    alert('No Delete Password has been set. Use the red DELETE PASSWORD box at the top first.');
+    return false;
+  }
+  const input = document.getElementById('topDeletePasswordInput');
+  const entered = input ? input.value : '';
+  if(!entered){
+    alert('Enter the Delete Password in the red DELETE PASSWORD box at the top.');
+    if(input) input.focus();
+    return false;
+  }
+  if(entered !== deletePasswordCache){
+    alert('Incorrect Delete Password. Deletion cancelled.');
+    if(input){ input.value=''; input.focus(); }
+    return false;
+  }
+  if(input) input.value='';
   return true;
 }
 
-function editFinanceEntry(id){
-  if(!verifyEditDeletePassword('edit')) return;
-  let x = financeRows.find(r => r.id === id);
-  if(!x) return;
-  financeTab('entry');
-  document.getElementById('finEditId').value = id;
-  document.getElementById('finEntryTitle').textContent = 'Edit Existing Entry';
-  document.getElementById('finSaveBtn').textContent = 'Update Entry';
-  document.getElementById('finDate').value = fmtDMY(x.date);
-  document.getElementById('finFund').value = x.fund;
-  syncFundFields();
-  document.getElementById('finVoucher').value = x.voucher || '';
-  document.getElementById('finSlipNo').value = x.slipNo || '';
-  document.getElementById('finParticulars').value = x.particulars || '';
-  setTimeout(() => finAutoGrow(document.getElementById('finParticulars')), 0);
-  document.getElementById('finPaidTo').value = x.paidTo || '';
-  document.getElementById('finQty').value = x.quantity || '';
-  document.getElementById('finRate').value = x.rate || '';
-  document.getElementById('finReceipt').value = rAmt(x);
-  document.getElementById('finPayment').value = pAmt(x);
-  document.getElementById('finCheque').value = x.chequeNo || '';
-  document.getElementById('finAccNo').value = x.accNo || '';
-  document.getElementById('finSlipMode').value = x.slipMode || '';
-  syncFundFields();
-  document.getElementById('finRemarks').value = x.remarks || '';
-  window.scrollTo({top:0, behavior:'smooth'});
+/* ---------- Tabs ---------- */
+function showTab(tab){
+  document.querySelectorAll('.tabBtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+tab));
+}
+function buildFundTabs(){
+  const box = document.getElementById('fundTabs');
+  box.innerHTML = '';
+  FUNDS.forEach(f=>{
+    const b = document.createElement('button');
+    b.textContent = f.label; b.className = f.id===currentFund?'active':'';
+    b.onclick = ()=>{ currentFund=f.id; buildFundTabs(); watchCashbook(f.id); };
+    box.appendChild(b);
+  });
+}
+function buildBankTabs(){
+  const box = document.getElementById('bankTabs');
+  box.innerHTML = '';
+  BANKS.forEach(bk=>{
+    const b = document.createElement('button');
+    b.textContent = bk.label; b.className = bk.id===currentBank?'active':'';
+    b.onclick = ()=>{ currentBank=bk.id; buildBankTabs(); watchPassbook(bk.id); };
+    box.appendChild(b);
+  });
 }
 
-async function saveFinanceEntry(withSlip){
-  if(!auth.currentUser) return alert('Please sign in.');
-  let id = document.getElementById('finEditId').value;
-  let dateRaw = document.getElementById('finDate').value.trim();
-  let date = dmyToISO(dateRaw);
-  if(dateRaw && !date) return alert('Enter the date as DD-MM-YYYY (for example 05-04-2026).');
-  let fund = document.getElementById('finFund').value;
-  let part = document.getElementById('finParticulars').value.replace(/\s*[\r\n]+\s*/g, ' ').trim();
-
-  // Qty x Rate only fills its target box when that box is still 0
-  let q = finNum(document.getElementById('finQty').value), rt = finNum(document.getElementById('finRate').value);
-  if(q && rt){
-    const tid = document.getElementById('finCalcTarget')?.value === 'receipt' ? 'finReceipt' : 'finPayment';
-    if(finNum(document.getElementById(tid).value) === 0) document.getElementById(tid).value = (q * rt).toFixed(2);
-  }
-  // Receipt and Payment are always both stored: the unused side is 0
-  let rec = finNum(document.getElementById('finReceipt').value);
-  let pay = finNum(document.getElementById('finPayment').value);
-  document.getElementById('finReceipt').value = rec;
-  document.getElementById('finPayment').value = pay;
-
-  if(!date || !fund || !part) return alert('Date, Fund / PB and Particulars are required.');
-  if(rec < 0 || pay < 0) return alert('Amounts cannot be negative.');
-  if(rec <= 0 && pay <= 0) return alert('Enter a Receipt amount, a Payment amount, or both (the other stays 0).');
-
-  const paidTo = document.getElementById('finPaidTo').value.trim();
-  const fi = fundInfo(fund);
-  const slipMode = document.getElementById('finSlipMode').value || '';
-  const viaBank = slipIsBank(fund, slipMode);
-  const cheque = viaBank ? document.getElementById('finCheque').value.trim() : '';
-  const accNo  = viaBank ? document.getElementById('finAccNo').value.trim() : '';
-
-  let slipNo = null, fy = finFY(date);
-  if(withSlip){
-    if(pay <= 0) return alert('A Payment Slip needs a Payment amount.');
-    if(!paidTo) return alert('Enter "Paid To" — it is printed on the slip.');
-    slipNo = parseInt(document.getElementById('finSlipNo').value, 10);
-    if(!(slipNo > 0)) slipNo = nextSlipNo(fy);
-    const clash = usedSlipNos(fy).get(slipNo);
-    if(clash && clash.id !== id) return alert(`Slip SL No ${slipNo} (F.Y. ${fy}) is already used for "${clash.particulars}". Choose a different SL No.`);
-  } else {
-    const typed = parseInt(document.getElementById('finSlipNo').value, 10);
-    if(typed > 0) slipNo = typed;
-  }
-
-  let row = {date, fund, receipt: rec, payment: pay,
-    type: rec > 0 && pay > 0 ? 'both' : (rec > 0 ? 'receipt' : 'payment'),   // kept so older readers still work
-    amount: rec > 0 && pay > 0 ? rec + pay : (rec > 0 ? rec : pay),
-    voucher: document.getElementById('finVoucher').value.trim(), particulars: part, paidTo, chequeNo: cheque, accNo, slipMode,
-    quantity: q, rate: rt, remarks: document.getElementById('finRemarks').value.trim(),
-    createdBy: finCurrentUser(), source: 'web-cashbook', updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-  if(slipNo){ row.slipNo = slipNo; row.slipFy = fy; }
-
-  try {
-    if(id){
-      await db.collection('financeTransactions').doc(id).set(row, {merge:true});
-      document.getElementById('finEntryStatus').textContent = 'Updated successfully. Synced to Firebase.';
-    } else {
-      row.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection('financeTransactions').add(row);
-      // The onSnapshot listener will add the saved row from Firebase.
-      document.getElementById('finEntryStatus').textContent = 'Added successfully. Synced to Firebase.';
-    }
-  } catch(e) {
-    return alert('Save failed: ' + e.message);
-  }
-
-  clearFinanceEntry(true);
-  renderAll();
-
-  if(withSlip){
-    const slip = {sl: slipNo, date, payee: paidTo, cheque, fund, mode: slipMode, acc: accNo || elv('slipAcc').trim(), amount: pay, purpose: part, remarks: document.getElementById('finRemarks').value.trim(),
-                  bankLine: elv('slipBankLine') || SLIP_DEFAULT_BANK, leftLabel: elv('slipLeftLabel') || 'Hostel in Charge'};
-    financeTab('slip');
-    document.getElementById('slipFund').value = fund;
-    document.getElementById('slipFrom').value = fmtDMY(date);
-    document.getElementById('slipTo').value = fmtDMY(date);
-    slipStartTouched = false;
-    renderSlipList();
-    showSlipPreview([slip]);
-    document.getElementById('slipStatus').textContent = `Saved. Payment Slip SL ${slipNo} is ready — press Print.`;
-  }
+/* ---------- Helpers ---------- */
+function inr(n){
+  if(n===null||n===undefined||n==='') return '';
+  return Number(n).toLocaleString('en-IN', {maximumFractionDigits:2});
+}
+function dateSortKey(d){
+  return (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : '';
+}
+function fmtDMY(d){
+  if(!d) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : d;
 }
 
-async function deleteFinanceEntry(id){
-  if(!verifyEditDeletePassword('delete')) return;
-  let x = financeRows.find(r => r.id === id);
-  if(!x || !confirm(`Delete this entry?\n${fmtDMY(x.date)} | ${x.particulars} | Receipt ${finMoney(rAmt(x))} | Payment ${finMoney(pAmt(x))}`)) return;
-  try {
-    await db.collection('financeTransactions').doc(id).delete();
-    // The live Firebase listener will remove the deleted row.
-    renderAll();
-  } catch(e) {
-    alert('Delete failed: ' + e.message);
-  }
-}
-
-function exportFinanceJSON(){
-  let b = new Blob([JSON.stringify({version:1, funds:FINANCE_FUNDS, openingBalances:financeOpeningBalances, transactions:financeRows}, null, 2)], {type:'application/json'});
-  let a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TFHS_CashBook_Backup.json'; a.click();
-}
-
-function exportFinanceCSV(){
-  let head = ['Date','Fund','Voucher','Slip SL','Particulars','Paid To','Quantity','Rate','Receipt','Payment','Remarks','Created By'];
-  let esc = x => '"' + String(x??'').replace(/"/g,'""') + '"';
-  let rows = orderRows(financeRows.slice().sort(finCompare)).map(x => [fmtDMY(x.date), FINANCE_FUNDS.find(f=>f[0]===x.fund)?.[1]||x.fund, x.voucher, x.slipNo, x.particulars, x.paidTo, x.quantity, x.rate, rAmt(x), pAmt(x), x.remarks, x.createdBy].map(esc).join(','));
-  let b = new Blob([[head.map(esc).join(','), ...rows].join('\n')], {type:'text/csv'});
-  let a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TFHS_CashBook.csv'; a.click();
-}
-
-/* =====================================================================
-   PAYMENT SLIP  (same layout as the DECLARATION sheet of the Excel file)
-   Fund / PB dropdown decides CASH (BY HAND / CASH PAYMENT) or PB (cheque no. + A/c no.)
-   SL NO is typed in (or taken as the next free number for the financial year).
-   ===================================================================== */
-const SLIP_SCHOOL_1 = 'TALDANGRA FULMATI HIGH SCHOOL [H.S.]';
-const SLIP_SCHOOL_2 = 'P.O. TALDANGRA. * Block: TALDANGRA* DIST. BANKURA';
-const SLIP_DEFAULT_BANK = 'Bank: BGVB  /SBI / BDCC ; Br-TALDANGRA /BANKURA';
-let slipCurrent = [], slipCandidateRows = [], slipStartTouched = false;
-
-function numWordsIN(n){
-  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-  const two=k=>k<20?a[k]:b[Math.floor(k/10)]+(k%10?' '+a[k%10]:'');
-  const three=k=>{let s='';if(k>=100){s=a[Math.floor(k/100)]+' Hundred';k%=100;if(k)s+=' ';}return s+(k?two(k):'');};
-  if(n===0) return 'Zero';
-  const out=[]; const cr=Math.floor(n/1e7); n%=1e7; const lk=Math.floor(n/1e5); n%=1e5; const th=Math.floor(n/1e3); n%=1e3;
-  if(cr) out.push(three(cr)+' Crore'); if(lk) out.push(two(lk)+' Lakh'); if(th) out.push(two(th)+' Thousand'); if(n) out.push(three(n));
-  return out.join(' ');
-}
-function amountInWords(amt){
-  const total = Math.round(finNum(amt)*100), r = Math.floor(total/100), p = total%100;
-  return 'Rupees ' + numWordsIN(r) + (p ? ' and ' + numWordsIN(p) + ' Paise' : '') + ' Only';
-}
-function usedSlipNos(fy){ return new Map(financeRows.filter(x => x.slipNo && x.slipFy === fy).map(x => [Number(x.slipNo), x])); }
-function nextSlipNo(fy){ let m = 0; financeRows.forEach(x => { if(x.slipFy === fy && Number(x.slipNo) > m) m = Number(x.slipNo); }); return m + 1; }
-
-/* Paid via: '' = follow the fund (PB = bank, others = cash) | 'cash' | 'bank'.  A cash-fund payment may really go through the bank A/c. */
-function slipIsBank(fund, mode){ return mode === 'bank' ? true : mode === 'cash' ? false : fundInfo(fund).kind === 'bank'; }
-/* longer Particulars step the Purpose font down so the FULL text always fits on the slip */
-function slipPurposeSize(t){ const n = String(t||'').length; return n <= 150 ? 14 : n <= 230 ? 12 : n <= 330 ? 10.5 : n <= 450 ? 9 : 8; }
-function slipRemarksSize(t){ const n = String(t||'').length; return n <= 120 ? 11 : n <= 220 ? 10 : n <= 320 ? 9 : 8; }
-/* auto-grow a textarea to show all its text */
-function finAutoGrow(el){ if(!el) return; el.style.height = 'auto'; if(el.scrollHeight > 0) el.style.height = (el.scrollHeight + 2) + 'px'; }
-function finGrowAll(root){ (root || document).querySelectorAll('textarea.sp-purpose, textarea.sp-remarks, textarea.finParticularsBox').forEach(finAutoGrow); }
-/* one slip.  s = {sl,date(ISO),payee,cheque,fund,acc,amount,purpose,bankLine,leftLabel} */
-function slipHTML(s){
-  const f = fundInfo(s.fund), bank = slipIsBank(s.fund, s.mode);
-  const chequeTxt = bank ? (s.cheque ? finEsc(s.cheque) : '&nbsp;') : 'BY HAND';
-  const fromTxt = bank ? finEsc(f.label) + (s.acc ? ' &mdash; A/c ' + finEsc(s.acc) : '') : 'CASH PAYMENT <small>[' + finEsc(f.label) + ']</small>';
-  const amt = finNum(s.amount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return `<div class="pslip">
-  <div class="p-top"><div class="p-sl">${finEsc(s.sl)}</div></div>
-  <div class="p-head"><div class="t1">${finEsc(SLIP_SCHOOL_1)}</div><div class="t2">${finEsc(SLIP_SCHOOL_2)}</div></div>
-  <div class="p-upper">
-    <div class="p-payto">PAID TO-${finEsc(s.payee)}</div>
-    <div class="p-row"><span class="p-lab">Bearing Cheque NO</span><span class="p-val v1">${chequeTxt}</span><span class="p-r1"><span style="font-size:8pt">Dt.</span><span class="dt">${finEsc(fmtDMY(s.date))}</span><span class="fy">F.Y. ${finEsc(finFY(s.date))}</span></span></div>
-    <div class="p-row"><span class="p-lab">From A/c No / CASH</span><span class="p-val v2">${fromTxt}</span><span class="p-bank">${finEsc(s.bankLine || SLIP_DEFAULT_BANK)}</span></div>
-    <div class="p-row" style="min-height:10mm"><span class="p-lab">Cheque /Cash Amt</span><span class="p-amt"><span>Rs.</span><span>${amt}</span></span></div>
-    <div class="p-row"><span class="p-lab">In words Rupees</span><span class="p-words">${finEsc(amountInWords(s.amount))}</span></div>
-    <div class="p-purpose" style="font-size:${slipPurposeSize(s.purpose)}pt">Purpose:-${finEsc(s.purpose)}</div>
-    ${String(s.remarks||'').trim() ? `<div class="p-remarks" style="font-size:${slipRemarksSize(s.remarks)}pt">Remarks:-${finEsc(s.remarks)}</div>` : ''}
-    <div class="p-sign"><span>${finEsc(s.leftLabel || 'Hostel in Charge')}</span><span>Headmaster</span></div>
-  </div>
-  <div class="p-lower">
-    <div class="p-recv">Received from Headmaster /Administrator</div>
-    <div class="p-foot"><span class="d">DATE</span><span class="f">For</span><div class="who"><div class="box"></div><div class="nm">${finEsc(s.payee)}</div></div></div>
-  </div>
-</div>`;
-}
-function slipPagesHTML(slips){
-  let out = '';
-  for(let i = 0; i < slips.length; i += 2) out += '<div class="slipPage">' + slipHTML(slips[i]) + (slips[i+1] ? slipHTML(slips[i+1]) : '') + '</div>';
-  return out;
-}
-function showSlipPreview(slips){
-  slipCurrent = slips;
-  document.getElementById('slipPreview').innerHTML = slipPagesHTML(slips);
-  document.getElementById('slipPrintBtn').disabled = !slips.length;
-}
-function printSlips(){
-  if(!slipCurrent.length) return alert('Generate the slips first.');
-  document.getElementById('slipPrintRoot').innerHTML = slipPagesHTML(slipCurrent);
-  document.body.classList.add('print-slips');
-  const done = () => { document.body.classList.remove('print-slips'); window.removeEventListener('afterprint', done); };
-  window.addEventListener('afterprint', done);
-  setTimeout(() => window.print(), 60);
-}
-
-/* ---------- Payment Slip tab: pick Fund/PB + dates, tick entries, generate ---------- */
-function initSlipTab(){
-  const sel = document.getElementById('slipFund');
-  if(sel && !sel.options.length){ sel.add(new Option('All Funds / PB','')); FINANCE_FUNDS.forEach(x => sel.add(new Option(x[1], x[0]))); }
-  const f = document.getElementById('slipFrom'), t = document.getElementById('slipTo');
-  if(f && !f.value) f.value = fmtDMY(todayISO());
-  if(t && !t.value) t.value = fmtDMY(todayISO());
-  renderSlipList();
-}
-function slipFilterChanged(){ renderSlipList(); }
-function slipSelectAll(on){ document.querySelectorAll('#slipBody .sp-chk').forEach(c => c.checked = on); }
-
-function renderSlipList(preselectId){
-  const body = document.getElementById('slipBody'); if(!body) return;
-  const fund = elv('slipFund'), from = dmyVal('slipFrom'), to = dmyVal('slipTo');
-  slipCandidateRows = financeRows.filter(x => pAmt(x) > 0 && (!fund || x.fund === fund) && (!from || x.date >= from) && (!to || x.date <= to)).sort(finCompare);
-  body.innerHTML = slipCandidateRows.map(x => {
-    const mode = x.slipMode || '';
-    const on = preselectId ? x.id === preselectId : !x.slipNo;
-    return `<tr data-id="${finEsc(x.id)}"><td><input type="checkbox" class="sp-chk" ${on?'checked':''}></td><td>${finEsc(fmtDMY(x.date))}</td><td>${finEsc(fundInfo(x.fund).label)}</td>` +
-      `<td class="wrap-s"><input class="sp-payee" style="min-width:150px" value="${finEsc(x.paidTo||'')}"></td>` +
-      `<td class="wrap"><textarea class="sp-purpose" rows="2" oninput="finAutoGrow(this)">${finEsc(x.particulars||'')}</textarea></td>` +
-      `<td class="wrap"><textarea class="sp-remarks" rows="1" placeholder="Remarks (optional)" oninput="finAutoGrow(this)">${finEsc(x.remarks||'')}</textarea></td>` +
-      `<td class="num">${finMoney(pAmt(x))}</td>` +
-      `<td><select class="sp-mode" title="Cash funds can also be paid through the bank A/c"><option value=""${mode===''?' selected':''}>Auto (${fundInfo(x.fund).kind==='bank'?'Bank':'Cash'})</option><option value="cash"${mode==='cash'?' selected':''}>Cash</option><option value="bank"${mode==='bank'?' selected':''}>Bank A/c</option></select></td>` +
-      `<td><input class="sp-cheque" style="width:110px" value="${finEsc(x.chequeNo||'')}" placeholder="Cheque No."></td>` +
-      `<td><input class="sp-acc" style="width:130px" value="${finEsc(x.accNo||'')}" placeholder="A/c No."></td>` +
-      `<td>${x.slipNo ? finEsc(x.slipNo) : '&mdash;'}</td></tr>`;
-  }).join('') || '<tr><td colspan="11">No payment entries for this Fund / PB and date range.</td></tr>';
-  finGrowAll(body);
-  if(!slipStartTouched){
-    const st = document.getElementById('slipStartSl');
-    if(st) st.value = nextSlipNo(finFY(from || todayISO()));
-  }
-}
-
-function slipForEntry(id){
-  const x = financeRows.find(r => r.id === id); if(!x) return;
-  financeTab('slip');
-  document.getElementById('slipFund').value = x.fund;
-  document.getElementById('slipFrom').value = fmtDMY(x.date);
-  document.getElementById('slipTo').value = fmtDMY(x.date);
-  slipStartTouched = false;
-  renderSlipList(id);
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-async function generateSlips(){
-  if(!auth.currentUser) return alert('Please sign in.');
-  const trs = [...document.querySelectorAll('#slipBody tr[data-id]')].filter(tr => tr.querySelector('.sp-chk').checked);
-  if(!trs.length) return alert('Tick at least one payment entry.');
-  let next = parseInt(elv('slipStartSl'), 10);
-  const acc = elv('slipAcc').trim(), bankLine = elv('slipBankLine').trim() || SLIP_DEFAULT_BANK, left = elv('slipLeftLabel').trim() || 'Hostel in Charge';
-  const slips = [], saves = [], taken = {};
-  for(const tr of trs){
-    const x = financeRows.find(r => r.id === tr.dataset.id); if(!x) continue;
-    const payee = tr.querySelector('.sp-payee').value.trim();
-    const purpose = tr.querySelector('.sp-purpose').value.replace(/\s*[\r\n]+\s*/g, ' ').trim() || x.particulars || '';
-    const remarks = tr.querySelector('.sp-remarks').value.replace(/\s*[\r\n]+\s*/g, ' ').trim();
-    const mode = tr.querySelector('.sp-mode').value;
-    const viaBank = slipIsBank(x.fund, mode);
-    const cheque = viaBank ? tr.querySelector('.sp-cheque').value.trim() : '';
-    if(!payee) return alert(`Enter "Paid To" for: ${x.particulars}`);
-    const fy = finFY(x.date);
-    let no = Number(x.slipNo) || 0;
-    if(!no){
-      if(!(next > 0)) return alert('Enter the Start SL No.');
-      no = next++;
-      const clash = usedSlipNos(fy).get(no);
-      if(clash && clash.id !== x.id) return alert(`SL No ${no} (F.Y. ${fy}) is already used for "${clash.particulars}". Change the Start SL No.`);
-    }
-    const key = fy + '#' + no;
-    if(taken[key]) return alert(`SL No ${no} (F.Y. ${fy}) is used twice in this batch. Change the Start SL No.`);
-    taken[key] = true;
-    const accNo = viaBank ? (tr.querySelector('.sp-acc').value.trim() || acc || x.accNo || '') : '';
-    slips.push({sl: no, date: x.date, payee, cheque, fund: x.fund, mode, acc: accNo, amount: pAmt(x), purpose, remarks, bankLine, leftLabel: left});
-    saves.push({id: x.id, data: {slipNo: no, slipFy: fy, paidTo: payee, chequeNo: cheque, accNo, slipMode: mode, remarks, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}});
-  }
-  if(!slips.length) return;
-  const status = document.getElementById('slipStatus');
-  try {
-    for(let i = 0; i < saves.length; i += 400){
-      const b = db.batch();
-      saves.slice(i, i + 400).forEach(s => b.set(db.collection('financeTransactions').doc(s.id), s.data, {merge:true}));
-      await b.commit();
-    }
-    status.textContent = `${slips.length} slip(s) generated — SL numbers saved with the entries. Press Print (2 slips per A4 page).`;
-  } catch(e) {
-    status.textContent = `${slips.length} slip(s) generated, but the SL numbers could not be saved: ${e.message}`;
-  }
-  showSlipPreview(slips);
-  slipStartTouched = false;
-  renderSlipList();
-  renderAll();
-}
-
-function findHeader(rows){
-  for(let i=0; i<Math.min(rows.length,20); i++){
-    let a = (rows[i]||[]).map(x => String(x??'').trim().toLowerCase());
-    if(a.some(x => x==='date'||x.includes('date')) && a.some(x => x.includes('particular')||x==='item'||x.includes('details')||x.includes('collection'))) return {i,a};
-  }
-  return null;
-}
-
-async function importLegacyCashWorkbook(file){
-  if(!file) return;
-  try {
-    if(!auth.currentUser) return alert('Please sign in before importing Excel.');
-
-    let wb = XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true}), all=[];
-    for(let name of wb.SheetNames){
-      let fund = LEGACY_SHEET_MAP[name];
-      if(!fund) continue;
-      let rows = XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''}), h = findHeader(rows);
-      if(!h) continue;
-      let ci = (pats) => h.a.findIndex(c => pats.some(p => c===p || c.includes(p)));
-      let di = ci(['date']), pi = ci(['particular','item','details','collection']), ri = ci(['received','receipt','amt','amount']), payi = ci(['payment','paid']), mi = ci(['remark','due']);
-      let last='';
-      for(let i=h.i+1; i<rows.length; i++){
-        let r = rows[i]||[], d = finDateValue(r[di]);
-        if(d) last = d; else d = last;
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
-        let part = String(r[pi]??'').trim(), rec = finNum(r[ri]), pay = finNum(r[payi]), rem = mi>=0 ? String(r[mi]??'').trim() : '';
-        let base = 'excel_' + name.replace(/[^A-Za-z0-9_-]/g,'_') + '_' + i;
-        if(rec>0) all.push({id:base+'_r',date:d,fund,type:'receipt',voucher:'',particulars:part||'Imported receipt',quantity:0,rate:0,amount:rec,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
-        if(pay>0) all.push({id:base+'_p',date:d,fund,type:'payment',voucher:'',particulars:part||'Imported payment',quantity:0,rate:0,amount:pay,remarks:rem,source:'excel-import',createdBy:finCurrentUser()});
-      }
-    }
-
-    if(!all.length) return alert('No ledger rows detected in the selected workbook.');
-
-    if(!confirm(`Sync ${all.length} transaction rows from Excel to Firebase?\n\nThese rows will be stored in the cloud and will appear on other computers using the same login.`)) return;
-
-    // Write imported rows to Firestore in batches so every computer sees the same data.
-    const BATCH_SIZE = 400;
-    for(let start=0; start<all.length; start += BATCH_SIZE){
-      const batch = db.batch();
-      const chunk = all.slice(start, start + BATCH_SIZE);
-      chunk.forEach(x => {
-        const data = {...x, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-        delete data.id;
-        const ref = db.collection('financeTransactions').doc(x.id);
-        batch.set(ref, data, {merge:true});
+/* ---------- Cash Book ---------- */
+function watchCashbook(fundId){
+  if(cbUnsub) cbUnsub();
+  cbUnsub = db.collection('cashbook').doc(fundId).collection('entries')
+    .onSnapshot(snap=>{
+      cbEntries = [];
+      snap.forEach(doc=> cbEntries.push({id:doc.id, ...doc.data()}));
+      cbEntries.sort((a,b)=>{
+        const da = dateSortKey(a.date), db_ = dateSortKey(b.date);
+        if(da!==db_) return da.localeCompare(db_);
+        const ca = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        const cb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return ca - cb;
       });
-      await batch.commit();
+      renderCashbook();
+    }, err=>console.error(err));
+}
+function clearCashSearch(){
+  document.getElementById('cb_search').value='';
+  document.getElementById('cb_search_from').value='';
+  document.getElementById('cb_search_to').value='';
+  renderCashbook();
+}
+function renderCashbook(){
+  const tbody = document.getElementById('cb_tbody');
+  tbody.innerHTML = ''; VIS.cb = [];
+  const q = (document.getElementById('cb_search').value||'').trim().toLowerCase();
+  const from = dmyVal('cb_search_from');
+  const to = dmyVal('cb_search_to');
+  let bal = 0, shown = 0;
+  const cbRows = cbEntries.map(e=>{ bal += (Number(e.received)||0) - (Number(e.payment)||0); return {e, rb:bal}; });
+  orderRows(cbRows).forEach(({e, rb})=>{
+    if(from && e.date < from) return;
+    if(to && e.date > to) return;
+    if(q){
+      const hay = [e.particulars, e.vno, e.received, e.payment, e.date, fmtDMY(e.date)].join(' ').toLowerCase();
+      if(!hay.includes(q)) return;
     }
+    shown++; VIS.cb.push(e.id);
+    const tr = document.createElement('tr');
+    if(e.id === cbEditingId){
+      const isoDate = (e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) ? e.date : '';
+      tr.innerHTML = `<td class="noprint"></td><td><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="cbe_date" value="${fmtDMY(isoDate)}" style="width:110px"></td>
+        <td><input type="text" id="cbe_particulars" value="${escapeAttr(e.particulars)}" style="width:100%"></td>
+        <td><input type="text" id="cbe_vno" value="${escapeAttr(e.vno)}" style="width:70px"></td>
+        <td><input type="number" id="cbe_received" value="${e.received!=null?e.received:''}" style="width:90px"></td>
+        <td><input type="number" id="cbe_payment" value="${e.payment!=null?e.payment:''}" style="width:90px"></td>
+        <td class="num">${inr(rb)}</td>
+        <td class="noprint rowActions"><button onclick="saveEditCash('${e.id}')">💾</button><button onclick="cancelEditCash()">✖</button></td>`;
+    } else {
+      tr.innerHTML = `<td class="noprint"><input type="checkbox" ${SEL.cb.has(e.id)?'checked':''} onchange="selToggle('cb','${e.id}',this.checked)"></td><td>${fmtDMY(e.date)}</td><td>${e.particulars||''}</td><td>${e.vno||''}</td>
+        <td class="num recv">${inr(e.received)}</td><td class="num pay">${inr(e.payment)}</td>
+        <td class="num">${inr(rb)}</td>
+        <td class="noprint rowActions"><button onclick="startEditCash('${e.id}')">✏️</button><button onclick="deleteCashEntry('${e.id}')">🗑</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  document.getElementById('cb_balance').textContent = 'Balance: ₹' + inr(bal);
+  const info = document.getElementById('cb_matchInfo');
+  if(q || from || to) info.textContent = `Showing ${shown} of ${cbEntries.length} entries`;
+  else info.textContent = '';
+  selUpdate('cb');
+}
+function addCashEntry(){
+  const date = dmyVal('cb_date');
+  const particulars = document.getElementById('cb_particulars').value.trim();
+  const vno = document.getElementById('cb_vno').value.trim();
+  const received = document.getElementById('cb_received').value;
+  const payment = document.getElementById('cb_payment').value;
+  if(!date || !particulars){ alert('A valid Date (DD-MM-YYYY) and Particulars are required.'); return; }
+  db.collection('cashbook').doc(currentFund).collection('entries').add({
+    date, particulars, vno: vno||null,
+    received: received? Number(received): null,
+    payment: payment? Number(payment): null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    document.getElementById('cb_particulars').value='';
+    document.getElementById('cb_vno').value='';
+    document.getElementById('cb_received').value='';
+    document.getElementById('cb_payment').value='';
+  });
+}
+async function deleteCashEntry(id){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  if(!(await verifyDeletePassword())) return;
+  if(!confirm('Delete this Cash Book entry permanently?')) return;
+  try{ await db.collection('cashbook').doc(currentFund).collection('entries').doc(id).delete(); }
+  catch(err){ alert('Could not delete entry: ' + err.message); }
+}
+async function startEditCash(id){
+  if(!(await verifyDeletePassword())) return;
+  cbEditingId = id; renderCashbook();
+}
+function cancelEditCash(){ cbEditingId = null; renderCashbook(); }
+function saveEditCash(id){
+  const date = dmyEditVal('cbe_date'); if(date===null) return;
+  const particulars = document.getElementById('cbe_particulars').value.trim();
+  const vno = document.getElementById('cbe_vno').value.trim();
+  const received = document.getElementById('cbe_received').value;
+  const payment = document.getElementById('cbe_payment').value;
+  if(!particulars){ alert('Particulars is required.'); return; }
+  db.collection('cashbook').doc(currentFund).collection('entries').doc(id).update({
+    date: date || null, particulars, vno: vno || null,
+    received: received? Number(received): null,
+    payment: payment? Number(payment): null
+  }).then(()=>{ cbEditingId = null; });
+}
 
-    // The live Firebase listener will receive the imported rows automatically.
-    initFinanceSelectors();
-    renderAll();
-
-    // Remove the old local-only cache so another browser cannot appear to
-    // have a different version of the imported ledger.
-    try { localStorage.removeItem('TFHS_EXCEL_IMPORT'); } catch(e){}
-
-    alert(`Excel synced successfully: ${all.length} rows are now stored in Firebase and available on other computers.`);
-  } catch(e) {
-    console.error('Excel import/sync failed:', e);
-    alert('Excel import/sync failed: ' + (e.message || e));
+/* ---------- Pass Book ---------- */
+function watchPassbook(bankId){
+  if(pbUnsub) pbUnsub();
+  pbUnsub = db.collection('passbook').doc(bankId).collection('entries')
+    .onSnapshot(snap=>{
+      pbEntries = [];
+      snap.forEach(doc=> pbEntries.push({id:doc.id, ...doc.data()}));
+      pbEntries.sort((a,b)=>{
+        const da = dateSortKey(a.date), db_ = dateSortKey(b.date);
+        if(da!==db_) return da.localeCompare(db_);
+        const ca = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        const cb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return ca - cb;
+      });
+      renderPassbook();
+    }, err=>console.error(err));
+}
+function clearPassSearch(){
+  document.getElementById('pb_search').value='';
+  document.getElementById('pb_search_from').value='';
+  document.getElementById('pb_search_to').value='';
+  renderPassbook();
+}
+function pbIsPending(e){ return e.chqPending===true && !/^\d{4}-\d{2}-\d{2}$/.test(e.date||''); }
+function pbEditCells(e, rbHtml){
+  const isoDate = (e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) ? e.date : '';
+  return `<td class="noprint"></td><td><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="pbe_date" value="${fmtDMY(isoDate)}" style="width:110px"></td>
+        <td><input type="text" id="pbe_particulars" value="${escapeAttr(e.particulars)}" style="width:100%"></td>
+        <td><input type="number" id="pbe_received" value="${e.received!=null?e.received:''}" style="width:90px"></td>
+        <td><input type="number" id="pbe_payment" value="${e.payment!=null?e.payment:''}" style="width:90px"></td>
+        <td class="num">${rbHtml}</td>
+        <td class="noprint rowActions"><button onclick="saveEditPass('${e.id}')">💾</button><button onclick="cancelEditPass()">✖</button></td>`;
+}
+function renderPassbook(){
+  const tbody = document.getElementById('pb_tbody');
+  tbody.innerHTML = ''; VIS.pb = [];
+  const q = (document.getElementById('pb_search').value||'').trim().toLowerCase();
+  const from = dmyVal('pb_search_from');
+  const to = dmyVal('pb_search_to');
+  let bal = 0, shown = 0, unc = 0;
+  const hit = e=>!q || [e.particulars, e.received, e.payment, e.date, fmtDMY(e.date)].join(' ').toLowerCase().includes(q);
+  const pend = pbEntries.filter(pbIsPending);
+  pend.forEach(e=>{ if(e.chqCancelled!==true) unc += Number(e.payment)||0; });
+  const pbRows = pbEntries.filter(e=>!pbIsPending(e)).map(e=>{ bal += (Number(e.received)||0) - (Number(e.payment)||0); return {e, rb:bal}; });
+  orderRows(pbRows).forEach(({e, rb})=>{
+    if(from && e.date < from) return;
+    if(to && e.date > to) return;
+    if(!hit(e)) return;
+    shown++; VIS.pb.push(e.id);
+    const tr = document.createElement('tr');
+    if(e.id === pbEditingId){
+      tr.innerHTML = pbEditCells(e, inr(rb));
+    } else {
+      tr.innerHTML = `<td class="noprint"><input type="checkbox" ${SEL.pb.has(e.id)?'checked':''} onchange="selToggle('pb','${e.id}',this.checked)"></td><td>${fmtDMY(e.date)}</td><td>${e.particulars||''}</td>
+        <td class="num recv">${inr(e.received)}</td><td class="num pay">${inr(e.payment)}</td>
+        <td class="num">${inr(rb)}</td>
+        <td class="noprint rowActions"><button onclick="startEditPass('${e.id}')">✏️</button><button onclick="deletePassEntry('${e.id}')">🗑</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  const pShow = (from||to) ? [] : pend.filter(hit);
+  if(pShow.length){
+    const h = document.createElement('tr');
+    h.innerHTML = '<td colspan="7" style="background:#fff3cd;font-weight:bold;">⏳ Cheques issued but not yet debited by the bank (W/D date pending) — not included in the Pass Book balance</td>';
+    tbody.appendChild(h);
+    pShow.forEach(e=>{
+      shown++; VIS.pb.push(e.id);
+      const tr = document.createElement('tr'); tr.style.background = '#fff8e1';
+      const canc = e.chqCancelled===true;
+      if(e.id === pbEditingId){ tr.innerHTML = pbEditCells(e, '—'); }
+      else {
+        tr.innerHTML = `<td class="noprint"><input type="checkbox" ${SEL.pb.has(e.id)?'checked':''} onchange="selToggle('pb','${e.id}',this.checked)"></td><td><span class="noprint"><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="W/D date" id="wd_${e.id}" style="width:100px"><button onclick="setWD('${e.id}')" title="Save W/D date" style="cursor:pointer">✔</button></span><span class="printOnly">Pending</span></td>
+          <td style="${canc?'text-decoration:line-through;color:var(--grey)':''}">${e.particulars||''}${canc?' <b style="color:var(--red);text-decoration:none">[CANCELLED in register]</b>':''}</td>
+          <td class="num"></td><td class="num pay">${inr(e.payment)}</td>
+          <td class="num" style="color:var(--grey)">${canc?'—':'pending'}</td>
+          <td class="noprint rowActions"><button onclick="startEditPass('${e.id}')">✏️</button><button onclick="deletePassEntry('${e.id}')">🗑</button></td>`;
+      }
+      tbody.appendChild(tr);
+    });
   }
+  document.getElementById('pb_balance').textContent = 'Balance: ₹' + inr(bal) + (unc>0 ? '  ·  Uncleared cheques: ₹' + inr(unc) + '  ·  After uncleared: ₹' + inr(bal-unc) : '');
+  const info = document.getElementById('pb_matchInfo');
+  if(q || from || to) info.textContent = `Showing ${shown} of ${pbEntries.length} entries`;
+  else info.textContent = '';
+  selUpdate('pb');
+}
+function addPassbookEntry(){
+  const date = dmyVal('pb_date');
+  const particulars = document.getElementById('pb_particulars').value.trim();
+  const received = document.getElementById('pb_received').value;
+  const payment = document.getElementById('pb_payment').value;
+  if(!date || !particulars){ alert('A valid Date (DD-MM-YYYY) and Particulars are required.'); return; }
+  db.collection('passbook').doc(currentBank).collection('entries').add({
+    date, particulars,
+    received: received? Number(received): null,
+    payment: payment? Number(payment): null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    document.getElementById('pb_particulars').value='';
+    document.getElementById('pb_received').value='';
+    document.getElementById('pb_payment').value='';
+  });
+}
+async function deletePassEntry(id){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  if(!(await verifyDeletePassword())) return;
+  if(!confirm('Delete this Pass Book entry permanently?')) return;
+  try{ await db.collection('passbook').doc(currentBank).collection('entries').doc(id).delete(); }
+  catch(err){ alert('Could not delete entry: ' + err.message); }
+}
+async function startEditPass(id){
+  if(!(await verifyDeletePassword())) return;
+  pbEditingId = id; renderPassbook();
+}
+function cancelEditPass(){ pbEditingId = null; renderPassbook(); }
+function saveEditPass(id){
+  const date = dmyEditVal('pbe_date'); if(date===null) return;
+  const particulars = document.getElementById('pbe_particulars').value.trim();
+  const received = document.getElementById('pbe_received').value;
+  const payment = document.getElementById('pbe_payment').value;
+  if(!particulars){ alert('Particulars is required.'); return; }
+  const cur = pbEntries.find(x=>x.id===id) || {};
+  db.collection('passbook').doc(currentBank).collection('entries').doc(id).update({
+    date: date || null, particulars,
+    received: received? Number(received): null,
+    payment: payment? Number(payment): null,
+    chqPending: !!(cur.chqPending && !date)
+  }).then(()=>{ pbEditingId = null; });
+}
+/* Quick "W/D date" for a pending cheque: type the date the bank debited it and press ✔ */
+async function setWD(id){
+  const el = document.getElementById('wd_'+id);
+  const iso = dmyToISO(el ? el.value : '');
+  if(!iso){ alert('Enter the W/D date as DD-MM-YYYY (the date the bank actually debited the cheque).'); return; }
+  try{
+    await db.collection('passbook').doc(currentBank).collection('entries').doc(id).update({
+      date: iso, chqPending:false,
+      wdSetBy: auth.currentUser ? (auth.currentUser.email||'') : '',
+      wdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(err){ alert('Could not save W/D date: '+err.message); }
 }
 
-function restoreLocalExcelImport(){
-  // Excel imports are now stored in Firebase, not only in this browser.
-  // Intentionally do not merge localStorage ledger rows into the live data.
-  try { localStorage.removeItem('TFHS_EXCEL_IMPORT'); } catch(e){}
+/* ---------- Cheque Issue Register  →  Pass Book (AUTOMATIC, no W/D date) ----------
+   • New cheques in the register are fetched automatically as "pending" Pass Book withdrawals (date blank).
+   • They do NOT touch the bank balance until the W/D date is set (typed, or matched from the bank pass-book data you load).
+   • Cancelled cheques are never fetched (and a pending entry is flagged if the cheque is cancelled later).
+   • Only cheques issued from 01-04-2024 (FY 2024-25) onward.
+   • A cut-off (last Sl. No. fetched) is remembered, so earlier entries are never fetched again.
+   Source: Firestore doc tfhs/chequeRegisterEntries (field "entries"). */
+const CHQ_REG_DOC = 'tfhs/chequeRegisterEntries';
+const CHQ_META_DOC = '_meta/chqImport';
+const CHQ_FROM = '2024-04-01';
+const CHQ_ACC_TO_BANK = {
+  '5536011000624':'dev_bank',
+  '11110260145':'voc_bank',
+  '110000315825':'mdm_bank',
+  '606113025908':'hostel_fund',
+  '32452532658':'ssa_sbi'
+};
+let chqDeclined = false, chqReg = [], chqRegLoaded = false, chqUnsub = null, chqBusy = false, chqMeta = null, chqTimer = null;
+
+function chqEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function chqSame(x,y){ return Math.abs((Number(x)||0)-(Number(y)||0))<0.005; }
+function chqDateOK(d){ return /^\d{4}-\d{2}-\d{2}$/.test(d||''); }
+function chqIsCancelled(e){
+  if(e.cancelled===true||e.canceled===true||e.isCancelled===true||e.deleted===true) return true;
+  const t = [e.status,e.remarks,e.remark,e.note,e.narration,e.purpose,e.to].map(x=>String(x==null?'':x)).join(' ');
+  return /cancel|void|spoil|stop\s*pay/i.test(t);
 }
+function chqWatch(){
+  if(chqUnsub) chqUnsub();
+  chqRegLoaded = false;
+  chqUnsub = db.doc(CHQ_REG_DOC).onSnapshot(s=>{
+    chqReg = (s.exists && Array.isArray(s.data().entries)) ? s.data().entries : [];
+    chqRegLoaded = true; chqSchedule();
+  }, err=>console.error('Cheque register watch error:', err));
+}
+function chqUnwatch(){ if(chqUnsub){ chqUnsub(); chqUnsub=null; } chqRegLoaded=false; }
+function chqSchedule(){ clearTimeout(chqTimer); chqTimer = setTimeout(()=>chqSync(false), 1200); }
+async function chqGetMeta(){
+  if(chqMeta) return chqMeta;
+  const s = await db.doc(CHQ_META_DOC).get();
+  chqMeta = s.exists ? s.data() : {};
+  return chqMeta;
+}
+function chqShowStatus(note){
+  const el = document.getElementById('chq_status'); if(!el) return;
+  const m = chqMeta || {}, t = new Date(), z=n=>String(n).padStart(2,'0');
+  el.textContent = 'Cheque Register auto-fetch: ' + (typeof m.lastSl==='number' ? 'fetched up to Sl. '+m.lastSl+(m.lastDoi?' (issued '+fmtDMY(m.lastDoi)+')':'') : 'not started')
+    + ' · checked '+z(t.getHours())+':'+z(t.getMinutes()) + (note?' · '+note:'');
+}
+async function chqSetCutoff(){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  const m = await chqGetMeta();
+  const v = prompt('Cheque Register entries up to this Sl. No. are treated as ALREADY fetched and are never fetched again.\nEnter Sl. No. (current: '+(typeof m.lastSl==='number'?m.lastSl:'not set')+'):');
+  if(v===null) return;
+  const n = Number(v);
+  if(!isFinite(n) || n<0){ alert('Enter a valid number.'); return; }
+  await db.doc(CHQ_META_DOC).set({lastSl:n, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), updatedBy:auth.currentUser.email||''},{merge:true});
+  chqMeta = {...(chqMeta||{}), lastSl:n};
+  chqSync(true);
+}
+async function chqSync(manual){
+  if(!auth.currentUser) return;
+  if(!chqRegLoaded || !BANKS.every(b=>ALLD.pb[b.id])){ if(manual) alert('Data is still loading — try again in a moment.'); return; }
+  if(chqBusy) return;
+  chqBusy = true;
+  if(manual) chqDeclined = false;
+  try{
+    const meta = await chqGetMeta();
+    const reg = chqReg.slice().sort((a,b)=>(Number(a.sl)||0)-(Number(b.sl)||0));
+    const bankOf = e=>CHQ_ACC_TO_BANK[(String(e.acc||'').match(/\d{6,}/)||[''])[0]] || null;
+    const chNoOf = e=>String(e.chNo||'').trim();
+    const amtOf = e=>Math.round((parseFloat(e.amount)||0)*100)/100;
+    const docId = e=>'chq_'+String(e.id!=null ? e.id : ('sl'+e.sl)).replace(/[^\w-]/g,'_');
+    const findRow = (e,bank)=>{
+      const n = chNoOf(e), a = amtOf(e);
+      return (ALLD.pb[bank]||[]).find(r=> r.id===docId(e) || (e.id!=null && r.chqRegId===e.id) || (n && chqSame(r.payment,a) && (String(r.particulars||'').includes(n) || String(r.chqNo||'').trim()===n)));
+    };
+    // cut-off: remembered Sl. No.; first time = highest Sl. already present in the Pass Books
+    let mark;
+    if(typeof meta.lastSl==='number') mark = meta.lastSl;
+    else { mark = 0; reg.forEach(e=>{ const b=bankOf(e); if(b && findRow(e,b)) mark = Math.max(mark, Number(e.sl)||0); }); }
+
+    const fresh = [], flags = [], noBank = new Set();
+    let maxSl = mark, skipCan = 0;
+    const regIds = new Set(reg.map(e=>e.id).filter(x=>x!=null));
+    reg.forEach(e=>{
+      const sl = Number(e.sl)||0, bank = bankOf(e), cancelled = chqIsCancelled(e);
+      if(bank){   // a still-pending imported cheque that is (no longer) cancelled in the register
+        const r = findRow(e,bank);
+        if(r && r.chqImported && r.chqPending===true && !chqDateOK(r.date) && (r.chqCancelled===true)!==cancelled) flags.push({bank, id:r.id, cancelled});
+      }
+      const bf = !!(bank && (meta.fromByBank||{})[bank] && !(meta.backfilled||{})[bank]);   // Pass Book just loaded from the bank: bring in its not-yet-debited cheques
+      if(sl <= mark && !bf) return;
+      if(sl > mark) maxSl = Math.max(maxSl, sl);
+      const doi = chqDateOK(e.doi) ? e.doi : (chqDateOK(e.dated) ? e.dated : '');
+      const fl = (meta.fromByBank||{})[bank], floor = (fl && fl>CHQ_FROM) ? fl : CHQ_FROM;
+      if(!doi || doi < floor) return;
+      if(cancelled){ skipCan++; return; }
+      if(!(amtOf(e)>0)) return;
+      if(!bank){ noBank.add(String(e.acc||'').trim()); return; }
+      if(findRow(e,bank)) return;
+      const n = chNoOf(e);
+      const parts = ['Chq No. '+(n||'—')+(chqDateOK(e.dated)?' dt. '+fmtDMY(e.dated):'')];
+      if(e.to) parts.push(String(e.to).trim());
+      if(e.purpose) parts.push(String(e.purpose).trim());
+      parts.push('Issued '+fmtDMY(doi));
+      fresh.push({bank, id:docId(e), data:{
+        date:null, particulars:chqEsc(parts.join(' – ')), received:null, payment:amtOf(e),
+        chqPending:true, chqImported:true, chqRegId:e.id!=null?e.id:null, chqSl:sl, chqNo:n, chqDoi:doi, chqCancelled:false,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      }});
+    });
+    // pending cheques whose register entry has been deleted → flag as cancelled
+    if(reg.length) BANKS.forEach(b=>(ALLD.pb[b.id]||[]).forEach(r=>{
+      if(r.chqImported && r.chqPending===true && !chqDateOK(r.date) && r.chqCancelled!==true && r.chqRegId!=null && !regIds.has(r.chqRegId) && !flags.some(f=>f.id===r.id))
+        flags.push({bank:b.id, id:r.id, cancelled:true});
+    }));
+
+    if(fresh.length > 25 && !manual && chqDeclined){ return; }
+    if(fresh.length > 25 && !confirm('Cheque Register has '+fresh.length+' new cheques (issued from 01-04-2024, after Sl. '+mark+') to add as PENDING Pass Book entries.\n\nAdd them now?\n(If many look like old, already-entered cheques, press Cancel and use "Fetch cut-off" to set the last Sl. No. already entered.)')){
+      chqDeclined = true; chqShowStatus('waiting for your decision (use Sync to retry)'); return;
+    }
+    const ops = [];
+    fresh.forEach(f=>ops.push(b=>b.set(db.collection('passbook').doc(f.bank).collection('entries').doc(f.id), f.data)));
+    flags.forEach(f=>ops.push(b=>b.update(db.collection('passbook').doc(f.bank).collection('entries').doc(f.id), {chqCancelled:f.cancelled})));
+    for(let i=0;i<ops.length;i+=400){ const batch = db.batch(); ops.slice(i,i+400).forEach(o=>o(batch)); await batch.commit(); }
+    const bfBanks = Object.keys(meta.fromByBank||{}).filter(b=>(meta.fromByBank||{})[b] && !(meta.backfilled||{})[b]);
+    if(maxSl > mark || typeof meta.lastSl!=='number' || bfBanks.length){
+      const last = reg.find(e=>(Number(e.sl)||0)===maxSl) || {};
+      const lastDoi = chqDateOK(last.doi) ? last.doi : (meta.lastDoi||null);
+      const bfObj = {}; bfBanks.forEach(b=>{ bfObj[b] = true; });
+      await db.doc(CHQ_META_DOC).set({lastSl:maxSl, lastDoi, backfilled:bfObj, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), updatedBy:auth.currentUser.email||''},{merge:true});
+      chqMeta = {...meta, lastSl:maxSl, lastDoi, backfilled:{...(meta.backfilled||{}), ...bfObj}};
+    }
+    const note = (fresh.length?fresh.length+' new pending cheque(s) added':'no new cheques') + (flags.length?' · '+flags.length+' flagged cancelled':'');
+    chqShowStatus(note);
+    if(manual){
+      alert('Cheque Register sync done.\n\nNew pending cheques added: '+fresh.length+'\nCancelled cheques skipped: '+skipCan+'\nFlagged as cancelled (already in Pass Book): '+flags.length
+        +(noBank.size?'\nNo Pass Book mapped for A/C: '+[...noBank].join(', '):''));
+    }
+  }catch(err){
+    console.error(err); chqShowStatus('error: '+err.message);
+    if(manual) alert('Cheque Register sync failed: '+err.message);
+  }finally{ chqBusy = false; }
+}
+
+/* ---------- Load bank Pass Book data (rows read from the bank PDF / JPEG) for the open Pass Book ----------
+   JSON = array of {"date":"DD-MM-YYYY","particulars":"...","received":0,"payment":0,"chqNo":"optional"}.
+   A withdrawal that matches a pending cheque (cheque no., else the only pending cheque of that amount) just
+   sets that cheque's W/D date; anything else is added as a new entry; exact duplicates are skipped. */
+function chqParseDate(s){
+  s = String(s||'').trim();
+  if(chqDateOK(s) || /^\d{4}-\d{2}$/.test(s)) return s;
+  const m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec(s);
+  return m ? dmyToISO(m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0')+'-'+m[3]) : '';
+}
+async function loadBankFile(input){
+  const file = input.files[0]; input.value = '';
+  if(!file) return;
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  let arr;
+  try{ const p = JSON.parse(await file.text()); arr = Array.isArray(p) ? p : (p && Array.isArray(p.entries) ? p.entries : null); }
+  catch(err){ alert('Could not read the file: '+err.message); return; }
+  if(!arr || !arr.length){ alert('The file must be a JSON array of entries.'); return; }
+  const bank = currentBank, label = (BANKS.find(b=>b.id===bank)||{}).label;
+  const replace = document.getElementById('bankMode').value === 'replace';
+  if(replace && !(await verifyDeletePassword())) return;
+  const oldRows = ALLD.pb[bank] || [];
+  const rows = replace ? [] : oldRows;
+  const isPend = r=>r.chqPending===true && !chqDateOK(r.date);
+  const pend = rows.filter(r=>isPend(r) && r.chqCancelled!==true);
+  const seen = rows.filter(r=>!isPend(r)).map(r=>({d:r.date||'', rc:Number(r.received)||0, py:Number(r.payment)||0}));
+  const used = new Set(), ops = [], bad = [];
+  let nMatch=0, nNew=0, nDup=0, nAmb=0;
+  arr.forEach((r,i)=>{
+    const date = chqParseDate(r.date), rc = Number(r.received)||0, py = Number(r.payment)||0;
+    if(!date || !(rc>0||py>0)){ bad.push(i+1); return; }
+    if(py>0){
+      const free = pend.filter(p=>!used.has(p.id) && chqSame(p.payment,py));
+      const cn = String(r.chqNo||'').trim() || ((/(?:chq|cheque|chk|ch)\.?\s*(?:no\.?)?\s*[:\-]?\s*(\d{4,})/i.exec(r.particulars||'')||[])[1]||'');
+      let c = cn ? free.find(p=>Number(p.chqNo)===Number(cn)) : (free.length===1 ? free[0] : null);
+      if(!cn && free.length>1) nAmb++;
+      if(c){ used.add(c.id); nMatch++; seen.push({d:date,rc:0,py}); ops.push(b=>b.update(db.collection('passbook').doc(bank).collection('entries').doc(c.id), {date, chqPending:false, bankRef:r.particulars||null, wdFromBank:true})); return; }
+    }
+    if(seen.some(x=>x.d===date && x.rc===rc && x.py===py)){ nDup++; return; }
+    seen.push({d:date,rc,py}); nNew++;
+    ops.push(b=>b.set(db.collection('passbook').doc(bank).collection('entries').doc(), {
+      date, particulars:chqEsc(String(r.particulars||'').trim()||'Bank entry'),
+      received: rc>0?rc:null, payment: py>0?py:null, bankLoaded:true, chqNo:(String(r.chqNo||'').trim()||null),
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }));
+  });
+  if(!ops.length){ alert('Nothing to load.\nDuplicates skipped: '+nDup+(bad.length?'\nRows without valid date/amount: '+bad.length:'')); return; }
+  if(!confirm((replace?'⚠ REPLACE MODE: all '+oldRows.length+' existing entries of this Pass Book will be DELETED (a backup file is downloaded first).\n\n':'')+'Pass Book: '+label+'\nRows in file: '+arr.length+'\n\nMatched to pending cheques (W/D date set): '+nMatch+'\nNew entries to add: '+nNew+'\nDuplicates skipped: '+nDup
+    +(nAmb?'\nAmbiguous withdrawals (same amount, several pending cheques, no cheque no.) added as new: '+nAmb:'')+(bad.length?'\nRows skipped (no valid date/amount): '+bad.length:'')+'\n\nContinue?')) return;
+  try{
+    if(replace){
+      chqBusy = true;   // hold the cheque auto-fetch until the new data is in
+      const t = new Date(), z=n=>String(n).padStart(2,'0');
+      const bk = oldRows.map(r=>({...r, createdAt: r.createdAt && r.createdAt.toMillis ? r.createdAt.toMillis() : null}));
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(bk,null,1)],{type:'application/json'}));
+      a.download = 'passbook-'+bank+'-backup-'+t.getFullYear()+z(t.getMonth()+1)+z(t.getDate())+'-'+z(t.getHours())+z(t.getMinutes())+'.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      await new Promise(r=>setTimeout(r,600));
+      for(let i=0;i<oldRows.length;i+=400){ const b = db.batch(); oldRows.slice(i,i+400).forEach(r=>b.delete(db.collection('passbook').doc(bank).collection('entries').doc(r.id))); await b.commit(); }
+    }
+    for(let i=0;i<ops.length;i+=400){ const batch = db.batch(); ops.slice(i,i+400).forEach(o=>o(batch)); await batch.commit(); }
+    {
+      // cheques issued from this Pass Book's first date that are NOT in the bank data are fetched from the Cheque Register as pending
+      const m0 = await chqGetMeta();
+      const mind = arr.map(r=>chqParseDate(r.date)).filter(chqDateOK).sort()[0];
+      if(mind){
+        const prev = (m0.fromByBank||{})[bank];
+        const from = (replace || !prev || mind<prev) ? mind : prev;
+        await db.doc(CHQ_META_DOC).set({fromByBank:{[bank]:from}, backfilled:{[bank]:false}},{merge:true});
+        chqMeta = {...m0, fromByBank:{...(m0.fromByBank||{}),[bank]:from}, backfilled:{...(m0.backfilled||{}),[bank]:false}};
+      }
+      chqBusy = false; chqSchedule();
+    }
+    alert('Done. W/D dates set: '+nMatch+' · new entries added: '+nNew+(replace?'\nOld entries removed: '+oldRows.length+'\nCheques issued later and not found in the bank data will now appear as PENDING.':''));
+  }catch(err){ chqBusy = false; console.error(err); alert('Load failed: '+err.message); }
+}
+
+/* ---------- Backup ---------- */
+async function exportAll(){
+  const out = {cashbook:{}, passbook:{}, vouchers:[]};
+  const strip = d=>{ const o=d.data(); if(o.createdAt && o.createdAt.toMillis) o.createdAt=o.createdAt.toMillis(); if(o.wdAt && o.wdAt.toMillis) o.wdAt=o.wdAt.toMillis(); return o; };
+  for(const f of FUNDS){ out.cashbook[f.id] = (await db.collection('cashbook').doc(f.id).collection('entries').get()).docs.map(strip); }
+  for(const bk of BANKS){ out.passbook[bk.id] = (await db.collection('passbook').doc(bk.id).collection('entries').get()).docs.map(strip); }
+  out.vouchers = (await db.collection('vouchers').get()).docs.map(strip);
+  const blob = new Blob([JSON.stringify(out, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tfhs_cashbook_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+
+/* ---------- Bulk tools: tick rows → delete together · find duplicates · clear a whole Pass Book ---------- */
+const SEL = {cb:new Set(), pb:new Set()}, VIS = {cb:[], pb:[]};
+function selEntries(k){ return k==='cb' ? cbEntries : pbEntries; }
+function selColl(k){ return k==='cb' ? db.collection('cashbook').doc(currentFund).collection('entries') : db.collection('passbook').doc(currentBank).collection('entries'); }
+function selUpdate(k){
+  const ids = new Set(selEntries(k).map(e=>e.id));
+  [...SEL[k]].forEach(i=>{ if(!ids.has(i)) SEL[k].delete(i); });
+  const b = document.getElementById(k+'_delSel'); if(b) b.textContent = '🗑 Delete selected ('+SEL[k].size+')';
+}
+function selToggle(k,id,on){ if(on) SEL[k].add(id); else SEL[k].delete(id); selUpdate(k); }
+function selAll(k,on){ VIS[k].forEach(id=>{ if(on) SEL[k].add(id); else SEL[k].delete(id); }); if(k==='cb') renderCashbook(); else renderPassbook(); }
+async function selDelete(k){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  const ids = [...SEL[k]];
+  if(!ids.length){ alert('Tick the entries to delete first (checkbox at the left of each row).'); return; }
+  if(!(await verifyDeletePassword())) return;
+  if(!confirm('Delete '+ids.length+' selected entr'+(ids.length===1?'y':'ies')+' permanently?')) return;
+  try{
+    const ref = selColl(k);
+    for(let i=0;i<ids.length;i+=400){ const b = db.batch(); ids.slice(i,i+400).forEach(id=>b.delete(ref.doc(id))); await b.commit(); }
+    SEL[k].clear();
+  }catch(err){ alert('Could not delete: '+err.message); }
+}
+function dupSelect(k){
+  const n = s=>String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();
+  const a = x=>(Number(x)||0).toFixed(2);
+  const rows = selEntries(k), seen = new Set(), dup = [];
+  rows.forEach(e=>{
+    const key = k==='cb' ? [e.date||'',n(e.particulars),n(e.vno),a(e.received),a(e.payment)].join('|')
+                         : [e.date||'',n(e.particulars),a(e.received),a(e.payment)].join('|');
+    if(seen.has(key)) dup.push(e.id); else seen.add(key);
+  });
+  if(k==='pb'){   // pending cheque that is already in the Pass Book as a dated (bank) entry
+    const isP = e=>e.chqPending===true && !/^\d{4}-\d{2}-\d{2}$/.test(e.date||'');
+    rows.filter(isP).forEach(p=>{
+      const no = String(p.chqNo||'').trim(); if(!no || dup.includes(p.id)) return;
+      if(rows.some(r=>r.id!==p.id && !isP(r) && Math.abs((Number(r.payment)||0)-(Number(p.payment)||0))<0.005 && (String(r.chqNo||'').trim()===no || String(r.particulars||'').includes(no)))) dup.push(p.id);
+    });
+  }
+  SEL[k].clear(); dup.forEach(id=>SEL[k].add(id));
+  if(k==='cb') renderCashbook(); else renderPassbook();
+  alert(dup.length ? dup.length+' repeated entr'+(dup.length===1?'y is':'ies are')+' now ticked (the first of each is kept).\n\nCheck them, untick any that are genuine, then press "Delete selected".' : 'No repeated entries found.');
+}
+async function pbClearAll(){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  const all = document.getElementById('pb_clearScope').value==='all';
+  const banks = all ? BANKS : BANKS.filter(b=>b.id===currentBank);
+  const cnt = banks.map(b=>({b, rows:(ALLD.pb[b.id]||[])}));
+  const total = cnt.reduce((n,c)=>n+c.rows.length,0);
+  if(!total){ alert('Nothing to delete — already empty.'); return; }
+  if(!(await verifyDeletePassword())) return;
+  if(!confirm('DELETE EVERY ENTRY of:\n'+cnt.map(c=>'  • '+c.b.label+': '+c.rows.length).join('\n')+'\n\nTotal '+total+' rows. A backup file is downloaded first.\n\nContinue?')) return;
+  if(prompt('Type DELETE (capital letters) to confirm:')!=='DELETE') return;
+  chqBusy = true;
+  try{
+    const m0 = await chqGetMeta();
+    const t = new Date(), z=n=>String(n).padStart(2,'0');
+    const bk = {}; cnt.forEach(c=>{ bk[c.b.id] = c.rows.map(r=>({...r, createdAt: r.createdAt && r.createdAt.toMillis ? r.createdAt.toMillis() : null})); });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(bk,null,1)],{type:'application/json'}));
+    a.download = 'passbook-cleared-backup-'+t.getFullYear()+z(t.getMonth()+1)+z(t.getDate())+'-'+z(t.getHours())+z(t.getMinutes())+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    await new Promise(r=>setTimeout(r,600));
+    for(const c of cnt){
+      for(let i=0;i<c.rows.length;i+=400){ const b = db.batch(); c.rows.slice(i,i+400).forEach(r=>b.delete(db.collection('passbook').doc(c.b.id).collection('entries').doc(r.id))); await b.commit(); }
+    }
+    // old cheques must not come back by themselves: cut-off = everything in the register today
+    const mx = chqReg.reduce((m,e)=>Math.max(m,Number(e.sl)||0),0);
+    const fv = firebase.firestore.FieldValue.delete(), upd = {lastSl:mx, fromByBank:{}, backfilled:{}};
+    cnt.forEach(c=>{ upd.fromByBank[c.b.id] = fv; upd.backfilled[c.b.id] = fv; });
+    await db.doc(CHQ_META_DOC).set(upd,{merge:true});
+    const fb = {...(m0.fromByBank||{})}, bf = {...(m0.backfilled||{})}; cnt.forEach(c=>{ delete fb[c.b.id]; delete bf[c.b.id]; });
+    chqMeta = {...m0, lastSl:mx, fromByBank:fb, backfilled:bf};
+    SEL.pb.clear();
+    alert('Cleared '+total+' entries. Now load the bank data (📄) for each Pass Book — cheques not yet debited will be fetched from the Cheque Register automatically.');
+  }catch(err){ console.error(err); alert('Clear failed: '+err.message); }
+  finally{ chqBusy = false; }
+}
+
+/* ---------- Voucher Register ---------- */
+function watchVouchers(){
+  if(vUnsub) vUnsub();
+  vUnsub = db.collection('vouchers').onSnapshot(snap=>{
+    vEntries = [];
+    snap.forEach(doc=> vEntries.push({id:doc.id, ...doc.data()}));
+    vEntries.sort((a,b)=>{
+      const da = dateSortKey(a.date), db_ = dateSortKey(b.date);
+      if(da!==db_) return da.localeCompare(db_);
+      const ca = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const cb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return ca - cb;
+    });
+    renderVouchers();
+  }, err=>console.error(err));
+}
+function clearVoucherSearch(){
+  document.getElementById('v_search').value='';
+  document.getElementById('v_search_from').value='';
+  document.getElementById('v_search_to').value='';
+  renderVouchers();
+}
+function renderVouchers(){
+  const tbody = document.getElementById('v_tbody');
+  tbody.innerHTML = '';
+  const q = (document.getElementById('v_search').value||'').trim().toLowerCase();
+  const from = dmyVal('v_search_from');
+  const to = dmyVal('v_search_to');
+  let shown = 0;
+  orderRows(vEntries).forEach(e=>{
+    if(from && e.date < from) return;
+    if(to && e.date > to) return;
+    if(q){
+      const hay = [e.vno, e.fund, e.payTo, e.purpose, e.amount, e.date, fmtDMY(e.date)].join(' ').toLowerCase();
+      if(!hay.includes(q)) return;
+    }
+    shown++;
+    const tr = document.createElement('tr');
+    if(e.id === vEditingId){
+      const isoDate = (e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) ? e.date : '';
+      const fundOpts = FUNDS.map(f=>`<option value="${f.label}" ${f.label===e.fund?'selected':''}>${f.label}</option>`).join('');
+      tr.innerHTML = `<td></td>
+        <td><input type="text" id="ve_vno" value="${escapeAttr(e.vno)}" style="width:70px"></td>
+        <td><input type="text" class="dmy" inputmode="numeric" maxlength="10" placeholder="DD-MM-YYYY" id="ve_date" value="${fmtDMY(isoDate)}" style="width:110px"></td>
+        <td><select id="ve_fund">${fundOpts}</select></td>
+        <td><input type="text" id="ve_payto" value="${escapeAttr(e.payTo)}" style="width:100%"></td>
+        <td><input type="text" id="ve_purpose" value="${escapeAttr(e.purpose)}" style="width:100%"></td>
+        <td><input type="number" id="ve_amount" value="${e.amount!=null?e.amount:''}" style="width:90px"></td>
+        <td class="noprint rowActions"><button onclick="saveEditVoucher('${e.id}')">💾</button><button onclick="cancelEditVoucher()">✖</button></td>`;
+    } else {
+      tr.innerHTML = `<td><input type="radio" name="vsel" value="${e.id}"></td>
+        <td>${e.vno||''}</td><td>${fmtDMY(e.date)}</td><td>${e.fund||''}</td>
+        <td>${e.payTo||''}</td><td>${e.purpose||''}</td><td class="num">${inr(e.amount)}</td>
+        <td class="noprint rowActions"><button onclick="startEditVoucher('${e.id}')">✏️</button><button onclick="deleteVoucher('${e.id}')">🗑</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  const info = document.getElementById('v_matchInfo');
+  if(q || from || to) info.textContent = `Showing ${shown} of ${vEntries.length} vouchers`;
+  else info.textContent = '';
+}
+function addVoucher(){
+  const date = dmyVal('v_date');
+  const fund = document.getElementById('v_fund').value;
+  const vno = document.getElementById('v_vno').value.trim();
+  const payTo = document.getElementById('v_payto').value.trim();
+  const purpose = document.getElementById('v_purpose').value.trim();
+  const amount = document.getElementById('v_amount').value;
+  if(!date || !payTo || !amount){ alert('A valid Date (DD-MM-YYYY), Pay To and Amount are required.'); return; }
+  db.collection('vouchers').add({
+    date, fund, vno: vno||null, payTo, purpose: purpose||null, amount: Number(amount),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    document.getElementById('v_vno').value='';
+    document.getElementById('v_payto').value='';
+    document.getElementById('v_purpose').value='';
+    document.getElementById('v_amount').value='';
+  });
+}
+async function deleteVoucher(id){
+  if(!auth.currentUser){ alert('Please sign in first.'); return; }
+  if(!(await verifyDeletePassword())) return;
+  if(!confirm('Delete this Voucher Register entry permanently?')) return;
+  try{ await db.collection('vouchers').doc(id).delete(); }
+  catch(err){ alert('Could not delete voucher: ' + err.message); }
+}
+async function startEditVoucher(id){
+  if(!(await verifyDeletePassword())) return;
+  vEditingId = id; renderVouchers();
+}
+function cancelEditVoucher(){ vEditingId = null; renderVouchers(); }
+function saveEditVoucher(id){
+  const date = dmyEditVal('ve_date'); if(date===null) return;
+  const fund = document.getElementById('ve_fund').value;
+  const vno = document.getElementById('ve_vno').value.trim();
+  const payTo = document.getElementById('ve_payto').value.trim();
+  const purpose = document.getElementById('ve_purpose').value.trim();
+  const amount = document.getElementById('ve_amount').value;
+  if(!payTo || !amount){ alert('Pay To and Amount are required.'); return; }
+  db.collection('vouchers').doc(id).update({
+    date: date || null, fund, vno: vno||null, payTo, purpose: purpose||null,
+    amount: Number(amount)
+  }).then(()=>{ vEditingId = null; });
+}
+function printVoucher(){
+  const sel = document.querySelector('input[name="vsel"]:checked');
+  if(!sel){ alert('Select a voucher row first (radio button on the left).'); return; }
+  const e = vEntries.find(x=>x.id===sel.value);
+  const area = document.getElementById('voucherPrintArea');
+  area.innerHTML = `
+    <h2>TALDANGRA FULMATI HIGH SCHOOL [H.S.]</h2>
+    <div class="addr">P.O. Taldangra, Block-Taldangra, Sub. Div. Khatra, Dist. Bankura</div>
+    <table>
+      <tr><td><b>Voucher No.</b></td><td>${e.vno||''}</td><td><b>Date</b></td><td>${fmtDMY(e.date)}</td></tr>
+      <tr><td><b>Fund / Category</b></td><td colspan="3">${e.fund||''}</td></tr>
+      <tr><td><b>Pay To</b></td><td colspan="3">${e.payTo||''}</td></tr>
+      <tr><td><b>Purpose / Particulars</b></td><td colspan="3">${e.purpose||''}</td></tr>
+      <tr><td><b>Amount (Rs.)</b></td><td colspan="3" style="font-size:1.1rem;font-weight:bold;">${inr(e.amount)}</td></tr>
+    </table>
+    <div style="display:flex;justify-content:space-between;margin-top:60px;">
+      <div>Signature of Payee</div><div>Passed for Payment — Headmaster</div>
+    </div>`;
+  area.style.display = 'block';
+  document.getElementById('panel-voucher').classList.add('printing');
+  window.print();
+  document.getElementById('panel-voucher').classList.remove('printing');
+}
+
 </script>
 <script>
-/* ===== Suggestions from earlier saved entries (all funds, incl. Excel imports) ===== */
-const SUG={src:null,parts:[],payees:[]};
+/* ===== Data of ALL funds / pass books (for suggestions + reports) ===== */
+const ALLD={cb:{},pb:{}},ALLU=[];let SUGV=0;
+const rSrt=(a,b)=>{const da=dateSortKey(a.date),db2=dateSortKey(b.date);if(da!==db2)return da.localeCompare(db2);
+ const ca=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0,cb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;return ca-cb;};
+function repWatchAll(){
+ ALLU.splice(0).forEach(u=>{try{u();}catch(e){}});
+ const mk=(kind,coll,id)=>ALLU.push(db.collection(coll).doc(id).collection('entries').onSnapshot(snap=>{
+  const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));a.sort(rSrt);ALLD[kind][id]=a;SUGV++;
+  if(typeof chqSchedule==='function'&&BANKS.every(b=>ALLD.pb[b.id]))chqSchedule();
+  if(document.getElementById('panel-report').classList.contains('active')) repGenerate();
+ },err=>console.error(err)));
+ FUNDS.forEach(f=>mk('cb','cashbook',f.id));BANKS.forEach(b=>mk('pb','passbook',b.id));
+}
+
+/* ===== Suggestions from earlier saved entries (Cash Books + Pass Books + Vouchers) ===== */
+const SUG={key:null,parts:[],payees:[]};
+const rEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function sugBuild(){
- if(SUG.src===financeRows) return; SUG.src=financeRows;
- const P=new Map(),T=new Map(),A=new Set();
- financeRows.slice().sort(finCompare).forEach(x=>{
-  const p=String(x.particulars||'').replace(/\s+/g,' ').trim(), t=String(x.paidTo||'').replace(/\s+/g,' ').trim();
+ const key=SUGV+'|'+(vEntries&&vEntries.length)+'|'+(vEntries&&vEntries[0]&&vEntries[0].id);
+ if(SUG.key===key) return; SUG.key=key;
+ const all=[];
+ Object.keys(ALLD.cb).forEach(k=>ALLD.cb[k].forEach(e=>all.push({...e,_s:'cb|'+k})));
+ Object.keys(ALLD.pb).forEach(k=>ALLD.pb[k].forEach(e=>all.push({...e,_s:'pb|'+k})));
+ vEntries.forEach(e=>all.push({...e,_s:'v|'+(e.fund||'')}));
+ all.sort(rSrt);
+ const P=new Map(),T=new Map();
+ all.forEach(x=>{
+  const p=String(x.particulars||x.purpose||'').replace(/\s+/g,' ').trim(),t=String(x.payTo||'').replace(/\s+/g,' ').trim();
   if(p){const o=P.get(p.toLowerCase());P.set(p.toLowerCase(),{text:p,last:x,count:(o?o.count:0)+1});}
-  if(t){const o=T.get(t.toLowerCase());T.set(t.toLowerCase(),{text:t,last:x,count:(o?o.count:0)+1,acc:x.accNo||(o&&o.acc)||''});}
-  if(x.accNo) A.add(String(x.accNo).trim());
+  if(t){const o=T.get(t.toLowerCase());T.set(t.toLowerCase(),{text:t,last:x,count:(o?o.count:0)+1});}
  });
  SUG.parts=[...P.values()];SUG.payees=[...T.values()];
- const dl=document.getElementById('sugAccList'); if(dl) dl.innerHTML=[...A].map(a=>`<option value="${finEsc(a)}">`).join('');
 }
-function sugMatch(list,q,fund){
+function sugMatch(list,q,pref){
  const toks=q.toLowerCase().split(/\s+/).filter(Boolean),out=[];
- list.forEach(o=>{const lc=o.text.toLowerCase(); if(!toks.every(t=>lc.includes(t))) return;
-  out.push({o,s:(lc.startsWith(toks[0])?30:0)+(o.last.fund===fund?20:0)+Math.min(o.count,10)});});
- return out.sort((a,b)=>b.s-a.s||finCompare(b.o.last,a.o.last)).slice(0,8).map(z=>z.o);
+ list.forEach(o=>{const lc=o.text.toLowerCase();if(!toks.every(t=>lc.includes(t)))return;
+  out.push({o,s:(lc.startsWith(toks[0])?30:0)+(pref(o.last)?20:0)+Math.min(o.count,10)});});
+ return out.sort((a,b)=>b.s-a.s||rSrt(b.o.last,a.o.last)).slice(0,8).map(z=>z.o);
 }
-function sugSet(id,v){const e=document.getElementById(id); if(e) e.value=v;}
-function sugPick(kind,o){
- const x=o.last;
- if(kind==='part'){ sugSet('finParticulars',o.text); finAutoGrow(document.getElementById('finParticulars'));
-  if(!elv('finPaidTo').trim()&&x.paidTo) sugSet('finPaidTo',x.paidTo);
-  if(!finNum(elv('finRate'))&&x.rate) sugSet('finRate',x.rate);
- } else sugSet('finPaidTo',o.text);
- const acc=(kind==='payee'&&o.acc)||x.accNo; if(!elv('finAccNo').trim()&&acc) sugSet('finAccNo',acc);
- if(!elv('finSlipMode')&&x.slipMode) sugSet('finSlipMode',x.slipMode);
- syncFundFields();
- const amt=pAmt(x)>0?'Payment '+finMoney(pAmt(x)):'Receipt '+finMoney(rAmt(x));
- document.getElementById('finEntryStatus').textContent=`Filled from an earlier entry (${fmtDMY(x.date)}, ${amt}). Amount is not copied — please enter it.`;
-}
-function sugAttach(id,kind){
- const el=document.getElementById(id); if(!el) return;
- const box=document.createElement('div'); box.className='sug-box'; box.style.display='none'; el.parentElement.appendChild(box);
+function sugLabel(s){const [k,i]=String(s).split('|');
+ return k==='cb'?'Cash Book · '+(FUNDS.find(f=>f.id===i)?.label||i):k==='pb'?'Pass Book · '+(BANKS.find(b=>b.id===i)?.label||i):'Voucher · '+i;}
+function sugAmt(x){return x.amount!=null?'Voucher ₹'+inr(x.amount):(Number(x.payment)>0?'Pay ₹'+inr(x.payment):'Rec ₹'+inr(x.received));}
+function sugAttach(id,kind,pref,onPick){
+ const el=document.getElementById(id);if(!el)return;
+ const box=document.createElement('div');box.className='sug-box';box.style.display='none';document.body.appendChild(box);
  let items=[],act=-1;
  const hide=()=>{box.style.display='none';items=[];act=-1;};
  const mark=()=>[...box.querySelectorAll('.sug-item')].forEach((d,i)=>d.classList.toggle('on',i===act));
  function show(){
-  if(elv('finEditId')){hide();return;}
-  const q=el.value.replace(/\s+/g,' ').trim(); if(q.length<2){hide();return;}
-  sugBuild(); items=sugMatch(kind==='part'?SUG.parts:SUG.payees,q,elv('finFund')); act=-1;
-  if(!items.length){hide();return;}
-  box.innerHTML='<div class="sug-head">From earlier entries — click / ↑↓ + Enter to use · Esc to close</div>'+items.map((o,i)=>{const x=o.last,amt=pAmt(x)>0?'Pay '+finMoney(pAmt(x)):'Rec '+finMoney(rAmt(x));
-   return `<div class="sug-item" data-i="${i}"><div class="st">${finEsc(o.text)}</div><div class="sm">${finEsc(fundInfo(x.fund).label)} · ${finEsc(fmtDMY(x.date))} · ${amt} · used ${o.count}×</div></div>`;}).join('');
-  box.style.display='block';
+  const q=el.value.replace(/\s+/g,' ').trim();if(q.length<2){hide();return;}
+  sugBuild();items=sugMatch(kind==='payto'?SUG.payees:SUG.parts,q,pref);act=-1;if(!items.length){hide();return;}
+  box.innerHTML='<div class="sug-head">From earlier entries (all funds, pass books, vouchers) — click or ↑↓ Enter · Esc closes</div>'+items.map((o,i)=>`<div class="sug-item" data-i="${i}"><div class="st">${rEsc(o.text)}</div><div class="sm">${rEsc(sugLabel(o.last._s))} · ${rEsc(fmtDMY(o.last.date))} · ${sugAmt(o.last)} · used ${o.count}×</div></div>`).join('');
+  const r=el.getBoundingClientRect();box.style.left=r.left+'px';box.style.top=(r.bottom+2)+'px';box.style.width=Math.max(r.width,340)+'px';box.style.display='block';
  }
- box.addEventListener('mousedown',e=>{e.preventDefault();const d=e.target.closest('.sug-item'); if(d){sugPick(kind,items[+d.dataset.i]);hide();}});
- el.addEventListener('input',show);
- el.addEventListener('blur',()=>setTimeout(hide,120));
- el.addEventListener('keydown',e=>{
-  if(box.style.display==='none') return;
+ const pick=o=>{el.value=o.text;if(onPick)onPick(o);hide();el.focus();};
+ box.addEventListener('mousedown',e=>{e.preventDefault();const d=e.target.closest('.sug-item');if(d)pick(items[+d.dataset.i]);});
+ el.addEventListener('input',show);el.addEventListener('blur',()=>setTimeout(hide,120));
+ window.addEventListener('scroll',hide,true);window.addEventListener('resize',hide);
+ el.addEventListener('keydown',e=>{if(box.style.display==='none')return;
   if(e.key==='ArrowDown'){e.preventDefault();act=(act+1)%items.length;mark();}
   else if(e.key==='ArrowUp'){e.preventDefault();act=(act<=0?items.length:act)-1;mark();}
-  else if(e.key==='Enter'&&act>=0){e.preventDefault();sugPick(kind,items[act]);hide();}
-  else if(e.key==='Escape') hide();
- });
+  else if(e.key==='Enter'&&act>=0){e.preventDefault();pick(items[act]);}
+  else if(e.key==='Escape')hide();});
 }
-sugAttach('finParticulars','part'); sugAttach('finPaidTo','payee');
+sugAttach('cb_particulars','part',x=>x._s==='cb|'+currentFund);
+sugAttach('pb_particulars','part',x=>x._s==='pb|'+currentBank);
+const vPref=x=>x._s==='v|'+document.getElementById('v_fund').value;
+sugAttach('v_purpose','part',vPref,o=>{const pt=document.getElementById('v_payto');if(!pt.value.trim()&&o.last.payTo)pt.value=o.last.payTo;});
+sugAttach('v_payto','payto',vPref);
 
-/* ===== Report: Synopsis / Demand (Receipt side | Payment side, fund-wise, up to date) ===== */
+/* ===== Report: Synopsis / Demand — Receipt (Income) side | Payment (Expenditure) side, fund-wise ===== */
+const FUND_BANK={development:'dev_bank',ssm:'ssa_sbi',hostel:'hostel_fund',vocational:'voc_bank',mdm:'mdm_bank'};
+function repGroups(){
+ const used=new Set(),G=[];
+ FUNDS.forEach(f=>{const bk=BANKS.find(b=>b.id===FUND_BANK[f.id]),accs=[{kind:'cb',id:f.id,label:'Cash Book'}];
+  if(bk){accs.push({kind:'pb',id:bk.id,label:'Pass Book — '+bk.label});used.add(bk.id);}G.push({id:f.id,label:f.label,accs});});
+ BANKS.filter(b=>!used.has(b.id)).forEach(b=>G.push({id:b.id,label:b.label,accs:[{kind:'pb',id:b.id,label:'Pass Book'}]}));
+ return G;
+}
 const f2=n=>(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const nc=n=>`<td class="n${n<0?' neg':''}">${f2(n)}</td>`;
 let repHTML='',repData=null;
-function initReportTab(){
- const s=document.getElementById('repFund');
- if(s&&!s.options.length){s.add(new Option('All Funds',''));FINANCE_FUNDS.forEach(f=>s.add(new Option(f[1],f[0])));}
- const t=document.getElementById('repTo'); if(t&&!t.value) t.value=fmtDMY(todayISO());
+function repInit(){
+ const s=document.getElementById('rp_scope');
+ if(s&&!s.options.length){s.add(new Option('All funds (Cash Book + Pass Book)','all'));s.add(new Option('All Cash Books only','cash'));s.add(new Option('All Pass Books only','bank'));
+  repGroups().forEach(g=>s.add(new Option('Fund: '+g.label+(g.accs.length>1?' (Cash + Pass Book)':''),g.id)));}
+ const t=document.getElementById('rp_to');if(t&&!t.value){const d=new Date();t.value=String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();}
  repGenerate();
 }
+function repAcc(a,from,to){
+ let open=0,rec=0,pay=0;const rows=[];
+ let unc=0;
+ (ALLD[a.kind][a.id]||[]).forEach(e=>{const d=dateSortKey(e.date),r=Number(e.received)||0,p=Number(e.payment)||0;
+  if(e.chqPending===true&&!d){if(!e.chqCancelled)unc+=p;return;}
+  if(from&&d<from)open+=r-p;else if(d<=to){rec+=r;pay+=p;rows.push(e);}});
+ return {...a,open,rec,pay,unc,close:open+rec-pay,rows};
+}
 function repCompute(){
- const fr=elv('repFrom').trim(),tr=elv('repTo').trim(),from=fr?dmyToISO(fr):'',to=tr?dmyToISO(tr):todayISO();
- if((fr&&!from)||(tr&&!to)) return {err:'Enter dates as DD-MM-YYYY.'};
- if(from&&to<from) return {err:'"Up to" date is before "From" date.'};
- const fs=elv('repFund'),skip=document.getElementById('repSkipEmpty').checked;
- const groups=FINANCE_FUNDS.filter(f=>!fs||f[0]===fs).map(f=>{
-  let open=finNum(financeOpeningBalances[f[0]]?.openingBalance),rec=0,pay=0;const rows=[];
-  financeRows.filter(x=>x.fund===f[0]).sort(finCompare).forEach(x=>{const d=x.date||'';
-   if(from&&d<from) open+=rAmt(x)-pAmt(x); else if(d<=to){rec+=rAmt(x);pay+=pAmt(x);rows.push(x);}});
-  return {f,open,rec,pay,close:open+rec-pay,rows};
- }).filter(g=>fs||!skip||g.open||g.rec||g.pay);
- return {from,to,fs,groups};
+ const fr=document.getElementById('rp_from').value.trim(),tr=document.getElementById('rp_to').value.trim();
+ const from=fr?dmyToISO(fr):'',to=tr?dmyToISO(tr):'9999-12-31';
+ if((fr&&!from)||(tr&&!to))return {err:'Enter dates as DD-MM-YYYY.'};
+ if(from&&to<from)return {err:'"Up to" date is before "From" date.'};
+ const sc=document.getElementById('rp_scope').value||'all',skip=document.getElementById('rp_skip').checked,specific=!['all','cash','bank'].includes(sc);
+ const groups=repGroups().filter(g=>specific?g.id===sc:true).map(g=>({label:g.label,accs:g.accs
+  .filter(a=>sc==='cash'?a.kind==='cb':sc==='bank'?a.kind==='pb':true).map(a=>repAcc(a,from,to))
+  .filter(a=>specific||!skip||a.open||a.rec||a.pay)})).filter(g=>g.accs.length);
+ return {from,to:tr?to:'',fromRaw:from,groups,scopeLabel:document.getElementById('rp_scope').selectedOptions[0]?.text||''};
 }
 function repHead(D,type){
- const per=D.from?`Period: ${fmtDMY(D.from)} to ${fmtDMY(D.to)}`:`Up to date: ${fmtDMY(D.to)} (from the beginning, with opening balance)`;
- return `<div class="rep-title"><div class="t1">Taldangra Fulmati High School (H.S.)</div><div class="t2">Receipt &amp; Payment — ${type==='demand'?'Demand / Detailed Statement':'Synopsis'} (Fund-wise)</div><div class="t3">${per} · ${D.fs?finEsc(fundInfo(D.fs).label):'All Funds'} · Amount in ₹</div></div>`;
+ const per=D.from?`Period: ${fmtDMY(D.from)} to ${D.to?fmtDMY(D.to):'date'}`:`Up to date: ${D.to?fmtDMY(D.to):'today'} (from the beginning)`;
+ return `<div class="rep-title"><div class="t1">Taldangra Fulmati High School [H.S.]</div><div class="t2">Receipt &amp; Payment — ${type==='demand'?'Demand / Detailed Statement':'Synopsis'} (Fund-wise)</div><div class="t3">${per} · ${rEsc(D.scopeLabel)} · Amount in ₹</div></div>`;
 }
-function repSynopsis(D){
- const T={o:0,r:0,p:0,c:0};
- const rows=D.groups.map((g,i)=>{T.o+=g.open;T.r+=g.rec;T.p+=g.pay;T.c+=g.close;
-  return `<tr><td>${i+1}</td><td>${finEsc(g.f[1])}</td>${nc(g.open)}${nc(g.rec)}${nc(g.open+g.rec)}${nc(g.pay)}${nc(g.close)}${nc(g.pay+g.close)}</tr>`;}).join('');
- return `<table class="rep-tbl"><thead><tr><th rowspan="2">Sl</th><th rowspan="2">Fund / PB</th><th colspan="3">RECEIPT SIDE</th><th colspan="3">PAYMENT SIDE</th></tr><tr><th>Opening Balance</th><th>Receipts</th><th>Total</th><th>Payments</th><th>Closing Balance</th><th>Total</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No data.</td></tr>'}<tr class="tot"><td></td><td>GRAND TOTAL</td>${nc(T.o)}${nc(T.r)}${nc(T.o+T.r)}${nc(T.p)}${nc(T.c)}${nc(T.p+T.c)}</tr></tbody></table>`;
+function repSyn(D){
+ const T={o:0,r:0,p:0,c:0};let h='',n=0,U=0;
+ const row=(cls,a,b,o,r,p,c)=>`<tr class="${cls}">${a}${b}${nc(o)}${nc(r)}${nc(o+r)}${nc(p)}${nc(c)}${nc(p+c)}</tr>`;
+ D.groups.forEach(g=>{const S={o:0,r:0,p:0,c:0};
+  g.accs.forEach((a,i)=>{n++;U+=a.unc||0;T.o+=a.open;T.r+=a.rec;T.p+=a.pay;T.c+=a.close;S.o+=a.open;S.r+=a.rec;S.p+=a.pay;S.c+=a.close;
+   h+=row('',`<td>${i?'':rEsc(g.label)}</td>`,`<td>${rEsc(a.label)}</td>`,a.open,a.rec,a.pay,a.close);});
+  if(g.accs.length>1) h+=row('sub','<td colspan="2">'+rEsc(g.label)+' — Fund total (Cash + Bank)</td>','',S.o,S.r,S.p,S.c).replace('<td colspan="2">','<td colspan="2">').replace('</td></td>','</td>');
+ });
+ return `<table class="rep-tbl"><thead><tr><th rowspan="2">Fund</th><th rowspan="2">Account</th><th colspan="3">RECEIPT / INCOME SIDE</th><th colspan="3">PAYMENT / EXPENDITURE SIDE</th></tr><tr><th>Opening Balance</th><th>Receipts</th><th>Total</th><th>Payments</th><th>Closing Balance</th><th>Total</th></tr></thead><tbody>${h||'<tr><td colspan="8">No data.</td></tr>'}${row('tot','<td colspan="2">GRAND TOTAL</td>','',T.o,T.r,T.p,T.c)}</tbody></table><div class="rep-note">Note: cash drawn from / deposited to the bank appears in both the Cash Book and the Pass Book, so Grand Total includes such transfers on both sides.${U>0?' Cheques issued but not yet debited by the bank (W/D date pending) are excluded: ₹'+f2(U)+'.':''}</div>`;
 }
 function repDemand(D){
  const cg='<col style="width:8%"><col style="width:6%"><col style="width:28%"><col style="width:8%">';
- const mk=x=>({d:fmtDMY(x.date),v:x.voucher||'',t:x.particulars||'',w:x.paidTo||''});
- const side=o=>o?`<td>${finEsc(o.d)}</td><td>${finEsc(o.v)}</td><td>${o.b?'<b>'+finEsc(o.t)+'</b>':finEsc(o.t)}${o.w?` <small>→ ${finEsc(o.w)}</small>`:''}</td>${nc(o.a)}`:'<td></td><td></td><td></td><td></td>';
- return D.groups.map(g=>{
-  const L=[{d:'',v:'',t:D.from?'To Opening Balance (b/f)':'To Opening Balance',a:g.open,b:1}].concat(g.rows.filter(x=>rAmt(x)>0).map(x=>({...mk(x),a:rAmt(x)})));
-  const R=g.rows.filter(x=>pAmt(x)>0).map(x=>({...mk(x),a:pAmt(x)})).concat([{d:'',v:'',t:'By Closing Balance (c/f)',a:g.close,b:1}]);
-  let h='';for(let i=0;i<Math.max(L.length,R.length);i++) h+=`<tr>${side(L[i])}${side(R[i])}</tr>`;
-  return `<div class="rep-fund">${finEsc(g.f[1])}</div><table class="rep-tbl fixed"><colgroup>${cg}${cg}</colgroup><thead><tr><th colspan="4">RECEIPT SIDE</th><th colspan="4">PAYMENT SIDE</th></tr><tr><th>Date</th><th>Vch</th><th>Particulars</th><th>Amount</th><th>Date</th><th>Vch</th><th>Particulars</th><th>Amount</th></tr></thead><tbody>${h}<tr class="tot"><td colspan="3">Total</td>${nc(g.open+g.rec)}<td colspan="3">Total</td>${nc(g.pay+g.close)}</tr></tbody></table>`;
- }).join('')||'<p>No data.</p>';
+ const mk=e=>({d:fmtDMY(e.date),v:e.vno||'',t:e.particulars||''});
+ const side=o=>o?`<td>${rEsc(o.d)}</td><td>${rEsc(o.v)}</td><td>${o.b?'<b>'+rEsc(o.t)+'</b>':rEsc(o.t)}</td>${nc(o.a)}`:'<td></td><td></td><td></td><td></td>';
+ return D.groups.map(g=>g.accs.map(a=>{
+  const L=[{t:D.from?'To Opening Balance (b/f)':'To Opening Balance',a:a.open,b:1}].concat(a.rows.filter(e=>Number(e.received)>0).map(e=>({...mk(e),a:Number(e.received)})));
+  const R=a.rows.filter(e=>Number(e.payment)>0).map(e=>({...mk(e),a:Number(e.payment)})).concat([{t:'By Closing Balance (c/f)',a:a.close,b:1}]);
+  let h='';for(let i=0;i<Math.max(L.length,R.length);i++)h+=`<tr>${side(L[i])}${side(R[i])}</tr>`;
+  return `<div class="rep-fund">${rEsc(g.label)} — ${rEsc(a.label)}</div><table class="rep-tbl fixed"><colgroup>${cg}${cg}</colgroup><thead><tr><th colspan="4">RECEIPT / INCOME SIDE</th><th colspan="4">PAYMENT / EXPENDITURE SIDE</th></tr><tr><th>Date</th><th>V.No</th><th>Particulars</th><th>Amount</th><th>Date</th><th>V.No</th><th>Particulars</th><th>Amount</th></tr></thead><tbody>${h}<tr class="tot"><td colspan="3">Total</td>${nc(a.open+a.rec)}<td colspan="3">Total</td>${nc(a.pay+a.close)}</tr></tbody></table>`;
+ }).join('')).join('')||'<p>No data.</p>';
 }
 function repGenerate(){
- const out=document.getElementById('repOut'); if(!out) return;
- const D=repCompute(),st=document.getElementById('repStatus');
+ const out=document.getElementById('rp_out');if(!out)return;
+ const st=document.getElementById('rp_status'),D=repCompute();
  if(D.err){st.textContent=D.err;return;}
- repData=D;const type=elv('repType');
- repHTML=repHead(D,type)+(type==='demand'?repDemand(D):repSynopsis(D))+'<div class="rep-sign"><span>Prepared by (Clerk / Accountant)</span><span>Head of the Institution</span></div>';
- out.innerHTML=repHTML; st.textContent=`${D.groups.length} fund(s) · generated ${fmtDMY(todayISO())} · live from cloud data`;
+ repData=D;const type=document.getElementById('rp_type').value;
+ repHTML=repHead(D,type)+(type==='demand'?repDemand(D):repSyn(D))+'<div class="rep-sign"><span>Prepared by (Clerk / Accountant)</span><span>Head of the Institution</span></div>';
+ out.innerHTML=repHTML;st.textContent=D.groups.reduce((n,g)=>n+g.accs.length,0)+' account(s) · live from cloud data';
 }
 function repPrint(){
- if(!repHTML) return alert('Generate the report first.');
+ if(!repHTML)return alert('Generate the report first.');
  document.getElementById('reportPrintRoot').innerHTML=repHTML;
- const st=document.createElement('style');st.id='repPageStyle';st.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';document.head.appendChild(st);
+ const st=document.createElement('style');st.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';document.head.appendChild(st);
  document.body.classList.add('print-report');
  const done=()=>{document.body.classList.remove('print-report');st.remove();window.removeEventListener('afterprint',done);};
- window.addEventListener('afterprint',done); setTimeout(()=>window.print(),60);
+ window.addEventListener('afterprint',done);setTimeout(()=>window.print(),60);
 }
 function repExcel(){
- if(!repData) return alert('Generate the report first.');
- const D=repData,S=[['Fund / PB','Opening Balance','Receipts','Payments','Closing Balance']],E=[['Fund / PB','Date','Voucher','Particulars','Paid To','Receipt','Payment']];
- D.groups.forEach(g=>{S.push([g.f[1],g.open,g.rec,g.pay,g.close]);
-  E.push([g.f[1],'','','Opening Balance','',g.open,'']);
-  g.rows.forEach(x=>E.push([g.f[1],fmtDMY(x.date),x.voucher||'',x.particulars||'',x.paidTo||'',rAmt(x),pAmt(x)]));
-  E.push([g.f[1],'','','Closing Balance','','',g.close]);});
+ if(!repData)return alert('Generate the report first.');
+ if(typeof XLSX==='undefined'){const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=repExcel;document.head.appendChild(s);return;}
+ const S=[['Fund','Account','Opening Balance','Receipts','Payments','Closing Balance']],E=[['Fund','Account','Date','V.No','Particulars','Receipt','Payment']];
+ repData.groups.forEach(g=>g.accs.forEach(a=>{S.push([g.label,a.label,a.open,a.rec,a.pay,a.close]);
+  E.push([g.label,a.label,'','','Opening Balance',a.open,'']);
+  a.rows.forEach(e=>E.push([g.label,a.label,fmtDMY(e.date),e.vno||'',e.particulars||'',Number(e.received)||0,Number(e.payment)||0]));
+  E.push([g.label,a.label,'','','Closing Balance','',a.close]);}));
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(S),'Synopsis');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(E),'Statement');
- XLSX.writeFile(wb,`TFHS_Report_${D.to}.xlsx`);
+ XLSX.writeFile(wb,'TFHS_Report_'+(repData.to||'upto-date')+'.xlsx');
 }
 </script>
 </body>
